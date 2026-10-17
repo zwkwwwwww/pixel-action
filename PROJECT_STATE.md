@@ -26,14 +26,17 @@
 
 ## 当前状态
 
-- 当前 Phase：**Phase 0 完成（渲染循环 + 占位方块走位），进入 Phase 1**
-- 最新 Commit：（见 git log）
+- 当前 Phase：**Phase 1 完成（动作纯逻辑 + 色块版可打穿），Phase 2 由子代理并行推进 Blender 主角管线**
 - 当前分支：`main`
 - 运行状态：**正常**
-- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **12 pass / 0 fail**（缩放 7 + 输入 5）
-- 最近验证证据：`art-source/evidence/phase0-1080.png`；CDP 探针实测 `internal:480×270 / scale:3 /
-  pixelated:crisp-edges / tickAdvanced:31 / movedRight:true / movedDown:true / bodyOverflow:false /
-  consoleErrors:[] / exceptions:[]`
+- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **54 pass / 0 fail**
+  （缩放 7 + 输入 5 + 攻击 7 + 输入缓冲 5 + 世界 13 + AI 7 + 关卡 9 + 自动通关 1）
+- 最近验证证据：
+  - `art-source/evidence/phase1.png`（色块版战斗）
+  - CDP 探针 `tools/probes/phase1.js` 实测：走路 → **刷出 2 只 grunt、闸门 400**；
+    真实按 J **9 次命中 / 造成 80 伤害 / 双杀**；清完 **gateX 变 null**；按 K 得 **invuln:15**；
+    内部 `480×270`；`consoleErrors:[] exceptions:[]`
+  - `tests/playthrough.test.mjs`：无作弊自动玩家 **打通 3 波 + 击败 Boss**（全程掉血但未死）
 
 ## 运行方式（已实测）
 
