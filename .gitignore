@@ -26,13 +26,16 @@ coverage/
 
 # ── 本项目专用 ──
 # art-source/ 保存 Blender 渲染原始帧、ComfyUI 原图与中间产物，体积大且可由脚本重新生成，不入库。
+# 例外：Blender 工程源文件（.blend）要入库，否则换台机器无法复现渲染。
 # assets/ 保存游戏实际加载的成品精灵表/背景/音频，必须入库，否则新克隆无法运行。
-art-source/
+art-source/*
+!art-source/blender/
+art-source/blender/*
+!art-source/blender/*.blend
+!art-source/blender/enemies/
+art-source/blender/enemies/*
+!art-source/blender/enemies/*.blend
 tmp/
 *.pyc
 __pycache__/
 *.blend1
-
-# Blender 工程源文件要入库（可复现），但渲染帧不入库
-!art-source/blender/*.blend
-!art-source/blender/enemies/*.blend
