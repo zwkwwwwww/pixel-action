@@ -80,6 +80,22 @@ def find_armature():
     return arms[0]
 
 
+def find_mesh():
+    meshes = [o for o in bpy.data.objects if o.type == "MESH"]
+    if not meshes:
+        raise RuntimeError("no mesh in the .blend")
+    return meshes[0]
+
+
+def evaluated_z_bounds(mesh):
+    """World-space z range of the posed mesh (catches weapons under the floor)."""
+    deps = bpy.context.evaluated_depsgraph_get()
+    ev = mesh.evaluated_get(deps)
+    mw = ev.matrix_world
+    zs = [(mw @ v.co).z for v in ev.data.vertices]
+    return (round(min(zs), 4), round(max(zs), 4)) if zs else (None, None)
+
+
 def assign_action(arm, action):
     ad = arm.animation_data or arm.animation_data_create()
     ad.use_nla = False
@@ -161,6 +177,7 @@ def main():
     args = parse_args()
     scene = bpy.context.scene
     arm = find_armature()
+    mesh = find_mesh()
     cfg = scene_contract()
 
     render_px = int(cfg["render_px"])
@@ -236,6 +253,7 @@ def main():
             render_s = time.time() - t0
 
             px = load_rgba(path)
+            z_min, z_max = evaluated_z_bounds(mesh)
             alpha = px[..., 3]
             mask = alpha > 0.001
             if mask.any():
@@ -267,12 +285,13 @@ def main():
                 "bbox": bbox,
                 "content_px": [width, height],
                 "aspect": round(width / height, 3) if height else None,
+                "world_z": [z_min, z_max],
                 "alpha_coverage": round(float((alpha > 0.5).mean()), 4),
                 "cell": preview_meta,
             })
-            print("  %-8s f%d/%d  render %.2fs  bbox=%s %dx%d aspect %.2f" %
+            print("  %-8s f%d/%d  render %.2fs  bbox=%s %dx%d aspect %.2f  z[%.3f,%.3f]" %
                   (clip, frame, n, render_s, bbox, width, height,
-                   (width / height if height else 0)))
+                   (width / height if height else 0), z_min, z_max))
 
         elapsed = time.time() - t_clip
         report["clips"][clip] = {

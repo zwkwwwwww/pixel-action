@@ -47,6 +47,9 @@ export function createActor(cfg = {}) {
     aiTimer: 0,
     speedX: cfg.speedX ?? (cfg.side === 'player' ? WORLD.PLAYER_SPEED_X : 0.9),
     speedY: cfg.speedY ?? (cfg.side === 'player' ? WORLD.PLAYER_SPEED_Y : 0.7),
+    // 体型（命中盒半宽/半深）：Boss 比小怪大，不能沿用同一个盒子
+    bodyHalfW: cfg.bodyHalfW ?? WORLD.BODY_HALF_W,
+    bodyHalfD: cfg.bodyHalfD ?? WORLD.BODY_HALF_D,
   };
 }
 
@@ -76,10 +79,10 @@ export function startDodge(a, dir) {
 
 export function bodyBox(a) {
   return {
-    x1: a.x - WORLD.BODY_HALF_W,
-    x2: a.x + WORLD.BODY_HALF_W,
-    y1: a.y - WORLD.BODY_HALF_D,
-    y2: a.y + WORLD.BODY_HALF_D,
+    x1: a.x - (a.bodyHalfW ?? WORLD.BODY_HALF_W),
+    x2: a.x + (a.bodyHalfW ?? WORLD.BODY_HALF_W),
+    y1: a.y - (a.bodyHalfD ?? WORLD.BODY_HALF_D),
+    y2: a.y + (a.bodyHalfD ?? WORLD.BODY_HALF_D),
   };
 }
 

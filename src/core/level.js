@@ -31,7 +31,10 @@ export const LEVEL = {
   ],
   boss: {
     triggerX: 2000, gateX: 2520,
-    spawn: { kind: 'boss', x: 2400, y: 41, hp: 420, maxHp: 420, speedX: 0.8, speedY: 0.6 },
+    spawn: {
+      kind: 'boss', x: 2400, y: 41, hp: 420, maxHp: 420,
+      speedX: 0.8, speedY: 0.6, bodyHalfW: 20, bodyHalfD: 15,
+    },
   },
 };
 

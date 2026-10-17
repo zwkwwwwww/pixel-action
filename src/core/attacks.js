@@ -38,6 +38,14 @@ export const ATTACKS = {
     meterGain: 0, meterCost: 100,
     chainTo: null,
   },
+  slam: {
+    // Boss 专用：长前摇（给玩家反应时间）+ 大范围 + 重击退
+    startup: 16, active: 5, recovery: 24,
+    dmg: 26, hitstun: 26, kbX: 1.8, launch: 0,
+    reach: 52, halfDepth: 28,
+    meterGain: 0, meterCost: 0,
+    chainTo: null,
+  },
 };
 
 /** 当前帧是否处于攻击判定窗口（左闭右开，帧是浮点也安全）。 */

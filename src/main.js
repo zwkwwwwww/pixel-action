@@ -10,6 +10,7 @@ import { ATTACKS } from './core/attacks.js';
 import { loadSprites, drawActorSprite } from './render/sprites.js';
 import { drawText, textWidth } from './render/pixelfont.js';
 import { createEffects, spawnHitFx, updateEffects } from './core/effects.js';
+import { initAudio, playSfx, playBgm, stopBgm, toggleMute, audioSnapshot } from './render/audio.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -54,6 +55,7 @@ const state = {
   drawnActors: 0,
   won: false,
   lost: false,
+  mode: 'title', // title | play
   art: { loaded: [], missing: [], drawnSprites: 0 },
 };
 
@@ -82,6 +84,37 @@ const prevPos = new Map();
   }));
 })();
 
+// ——— 音频事件：状态迁移时才播，避免每帧重复触发 ———
+const prevAudio = { state: '', attack: null, dead: 0, boss: false, won: false, lost: false };
+function audioEvents() {
+  const p = world.player;
+  if (p.state === 'attack' && (prevAudio.state !== 'attack' || prevAudio.attack !== p.attack)) {
+    playSfx(p.attack === 'special' ? 'sfx_special' : 'sfx_swing', { volume: 0.65 });
+  }
+  if (p.state === 'dodge' && prevAudio.state !== 'dodge') playSfx('sfx_dodge', { volume: 0.55 });
+
+  const dead = world.enemies.filter((e) => e.dead).length;
+  if (dead > prevAudio.dead) playSfx('sfx_death', { volume: 0.5 });
+
+  if (level.bossSpawned && !prevAudio.boss) {
+    playBgm('bgm_boss', { volume: 0.5 });
+  }
+  if (level.won && !prevAudio.won) {
+    stopBgm();
+    playSfx('sfx_victory', { volume: 0.9 });
+  }
+  if (world.player.dead && !prevAudio.lost) {
+    stopBgm();
+    playSfx('sfx_death', { volume: 0.9 });
+  }
+  prevAudio.state = p.state;
+  prevAudio.attack = p.attack;
+  prevAudio.dead = dead;
+  prevAudio.boss = level.bossSpawned;
+  prevAudio.won = level.won;
+  prevAudio.lost = world.player.dead;
+}
+
 function applyViewport() {  const v = computeViewport(innerWidth, innerHeight);
   state.viewport = v;
   canvas.style.width = `${v.cssW}px`;
@@ -91,8 +124,18 @@ addEventListener('resize', applyViewport);
 applyViewport();
 
 addEventListener('keydown', (e) => {
+  ensureAudio();
+  if (state.mode === 'title') {
+    if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ') {
+      state.mode = 'play';
+      playBgm('bgm_battle', { volume: 0.45 });
+      e.preventDefault();
+    }
+    return;
+  }
   const k = KEYMAP[e.code];
   if (k) { keys[k] = true; e.preventDefault(); return; }
+  if (e.code === 'KeyM') { toggleMute(); state.audio = audioSnapshot(); return; }
   const action = ACTION_KEYS[e.code];
   if (action) {
     if (world.player.dead || level.won) return;
@@ -100,6 +143,14 @@ addEventListener('keydown', (e) => {
     e.preventDefault();
   }
 });
+
+// 音频必须等一次用户手势才能启动（浏览器自动播放策略）
+let audioReady = false;
+function ensureAudio() {
+  if (audioReady) return;
+  audioReady = true;
+  initAudio().then(() => { state.audio = audioSnapshot(); });
+}
 addEventListener('keyup', (e) => {
   const k = KEYMAP[e.code];
   if (k) { keys[k] = false; e.preventDefault(); }
@@ -129,6 +180,7 @@ function logicStep() {
     state.lastEvents.push(ev);
   }
   updateEffects(fx);
+  audioEvents();
   while (state.lastEvents.length > 40) state.lastEvents.shift();
 
   // 相机：跟随玩家并夹在闸门内
@@ -192,7 +244,39 @@ function drawGround(cam) {
   }
 }
 
+/** 标题画面：背景取中央 480×270，标题用点阵字排两行。 */
+function drawTitle() {
+  const bg = BACKGROUNDS.bg_title || BACKGROUNDS.bg_level;
+  if (bg) {
+    ctx.drawImage(bg, 240, 0, 480, 270, 0, 0, 480, 270);
+    ctx.fillStyle = 'rgba(5,7,12,.52)';
+    ctx.fillRect(0, 0, 480, 270);
+  } else {
+    ctx.fillStyle = '#0b1020';
+    ctx.fillRect(0, 0, 480, 270);
+  }
+
+  const line1 = 'ECHOES OF THE';
+  const line2 = 'RUSTED MOON';
+  drawText(ctx, line1, (VIEW_W - textWidth(line1, 3)) / 2, 58, '#d8c48a', 3, '#0a0d12');
+  drawText(ctx, line2, (VIEW_W - textWidth(line2, 4)) / 2, 92, '#e8dcc0', 4, '#0a0d12');
+  const sub = 'A 2.5D PIXEL ACTION SLICE';
+  drawText(ctx, sub, (VIEW_W - textWidth(sub, 1)) / 2, 140, '#8fa6c2', 1, '#05070b');
+
+  const pulse = 0.35 + 0.65 * Math.abs(Math.sin(state.frame / 34));
+  ctx.globalAlpha = pulse;
+  const press = 'PRESS ENTER TO START';
+  drawText(ctx, press, (VIEW_W - textWidth(press, 1)) / 2, 196, '#ffd166', 1, '#05070b');
+  ctx.globalAlpha = 1;
+
+  const keys = 'WASD MOVE   J ATTACK   K DODGE   L SPECIAL   M MUTE';
+  ctx.fillStyle = 'rgba(5,7,12,.6)';
+  ctx.fillRect(0, 226, VIEW_W, 14);
+  drawText(ctx, keys, (VIEW_W - textWidth(keys, 1)) / 2, 232, '#6f88a6', 1, '#05070b');
+}
+
 function draw() {
+  if (state.mode === 'title') { drawTitle(); return; }
   const cam = state.camX;
   const shakeX = (Math.random() - 0.5) * state.shake;
   const shakeY = (Math.random() - 0.5) * state.shake;
@@ -398,7 +482,8 @@ function frame(now) {
   let guard = 0;
   while (acc >= STEP_MS && guard++ < 5) {
     acc -= STEP_MS;
-    logicStep();
+    if (state.mode === 'play') logicStep();
+    else state.frame++;
   }
   draw();
   requestAnimationFrame(frame);
@@ -412,4 +497,5 @@ addEventListener('keydown', (e) => {
 globalThis.__game = state;
 state.press = (a) => world.press(a);
 state.setDir = (x, y) => { world.dir = { x, y }; };
+state.audioNow = audioSnapshot;
 state.ready = true;

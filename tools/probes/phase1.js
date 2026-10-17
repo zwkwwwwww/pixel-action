@@ -5,6 +5,10 @@
   const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   const down = (code) => dispatchEvent(new KeyboardEvent('keydown', { code, bubbles: true }));
   const up = (code) => dispatchEvent(new KeyboardEvent('keyup', { code, bubbles: true }));
+  // 标题画面：先 Enter 进游戏
+  dispatchEvent(new KeyboardEvent('keydown', { code: 'Enter', bubbles: true }));
+  dispatchEvent(new KeyboardEvent('keyup', { code: 'Enter', bubbles: true }));
+  await new Promise((r) => setTimeout(r, 120));
   const snap = () => ({
     frame: g.frame,
     playerX: Number(g.world.player.x.toFixed(1)),

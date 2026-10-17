@@ -19,7 +19,7 @@ export const AI_PROFILES = {
   },
   boss: {
     type: 'melee', speed: 0.8, turnSpeed: 1.1,
-    range: 42, depthRange: 22, cooldown: 76, attack: 'light3',
+    range: 42, depthRange: 22, cooldown: 76, attack: 'slam',
   },
 };
 

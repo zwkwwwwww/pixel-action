@@ -609,14 +609,14 @@ def build_grunt():
     DEATH_F = 0.74
 
     M = {
-        "skin": mat("gr_skin", (0.47, 0.55, 0.25), rough=0.66),
-        "skin_d": mat("gr_skin_d", (0.29, 0.36, 0.15), rough=0.72),
-        "rag": mat("gr_rag", (0.19, 0.27, 0.15), rough=0.88),
-        "rag_d": mat("gr_rag_d", (0.105, 0.165, 0.095), rough=0.90),
-        "leather": mat("gr_leather", (0.30, 0.20, 0.10), rough=0.72),
-        "metal": mat("gr_metal", (0.70, 0.73, 0.78), rough=0.32, metal=0.65, spec=0.6),
-        "eye": mat("gr_eye", (1.00, 0.86, 0.10), rough=0.28),
-        "tooth": mat("gr_tooth", (0.93, 0.91, 0.82), rough=0.45),
+        "skin": mat("gr_skin", (0.53, 0.59, 0.22), rough=0.66),
+        "skin_d": mat("gr_skin_d", (0.34, 0.40, 0.14), rough=0.72),
+        "rag": mat("gr_rag", (0.115, 0.155, 0.100), rough=0.88),
+        "rag_d": mat("gr_rag_d", (0.070, 0.100, 0.070), rough=0.90),
+        "leather": mat("gr_leather", (0.38, 0.24, 0.10), rough=0.72),
+        "metal": mat("gr_metal", (0.74, 0.77, 0.82), rough=0.30, metal=0.65, spec=0.6),
+        "eye": mat("gr_eye", (1.00, 0.88, 0.05), rough=0.28),
+        "tooth": mat("gr_tooth", (0.95, 0.93, 0.86), rough=0.45),
     }
 
     # legs -----------------------------------------------------------------
@@ -778,6 +778,8 @@ def build_brute():
         "armor": mat("br_armor", (0.55, 0.27, 0.09), rough=0.55, spec=0.4),
         "armor_d": mat("br_armor_d", (0.34, 0.16, 0.06), rough=0.62, spec=0.35),
         "iron": mat("br_iron", (0.31, 0.29, 0.28), rough=0.40, metal=0.55, spec=0.5),
+        "iron_d": mat("br_iron_d", (0.155, 0.145, 0.145), rough=0.46, metal=0.45, spec=0.45),
+        "iron_l": mat("br_iron_l", (0.47, 0.44, 0.42), rough=0.34, metal=0.60, spec=0.55),
         "leather": mat("br_leather", (0.23, 0.14, 0.07), rough=0.74),
         "skin": mat("br_skin", (0.72, 0.46, 0.32), rough=0.62),
         "skin_d": mat("br_skin_d", (0.55, 0.33, 0.22), rough=0.68),
@@ -1212,21 +1214,23 @@ def build_boss():
     ico("helm", (0.015, 0.0, 2.165), 0.185, (1.0, 1.0, 1.02), M["iron"], "head", subdiv=2)
     taper_box("helm_face", (0.115, 0.0, 2.080), (0.105, 0.0, 2.245), 0.255, 0.170, 0.230, 0.150,
               M["iron"], "head")
-    box_frame("visor", (0.185, 0.0, 2.165), Vector((1, 0, 0)), Vector((0, 1, 0)),
-              Vector((0, 0, 1)), 0.020, 0.115, 0.040, M["iron_d"], "head")
+    # recessed dark visor + a single glowing slit (the boss's tell)
+    box_frame("visor", (0.176, 0.0, 2.165), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.020, 0.120, 0.045, M["iron_d"], "head")
+    box_frame("eye_slit", (0.206, 0.0, 2.168), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.012, 0.086, 0.017, M["eye"], "head")
+    box_frame("eye_slit_core", (0.212, 0.0, 2.168), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.006, 0.058, 0.009, M["eye"], "head")
     for side in (-1, 1):
-        # glowing eye slits
-        box_frame("eye_%d" % side, (0.202, 0.058 * side, 2.168), Vector((1, 0, 0)),
-                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.008, 0.032, 0.016, M["eye"], "head")
-        # cheek vents
-        prism("vent_%d" % side, (0.190, 0.070 * side, 2.115), Vector((0, 1, 0)),
+        # cheek vents flanking the eye slit
+        prism("vent_%d" % side, (0.196, 0.092 * side, 2.115), Vector((0, 1, 0)),
               Vector((0, 0, 1)), Vector((1, 0, 0)),
-              [(-0.030, 0.030), (0.030, 0.030), (0.0, -0.030)], 0.012, M["brass"], "head")
+              [(-0.030, 0.032), (0.030, 0.032), (0.0, -0.032)], 0.014, M["brass"], "head")
         # crown horns sweeping up and back
-        tube("crown_a_%d" % side, (0.0, 0.135 * side, 2.280), (-0.070, 0.235 * side, 2.420),
-             0.060, 0.040, 6, M["brass"], "head")
-        tube("crown_b_%d" % side, (-0.070, 0.235 * side, 2.420),
-             (-0.175, 0.300 * side, 2.520), 0.040, 0.008, 6, M["brass"], "head")
+        tube("crown_a_%d" % side, (0.0, 0.135 * side, 2.280), (-0.075, 0.245 * side, 2.425),
+             0.075, 0.050, 6, M["brass"], "head")
+        tube("crown_b_%d" % side, (-0.075, 0.245 * side, 2.425),
+             (-0.195, 0.315 * side, 2.525), 0.050, 0.010, 6, M["brass"], "head")
     # crown crest
     prism("crest", (-0.010, 0.0, 2.340), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
@@ -1290,22 +1294,32 @@ def build_boss():
           [(0.0, 0.105), (0.80, 0.072), (0.86, 0.030), (0.80, 0.062), (0.0, 0.092)],
           0.026, M["iron_l"], "weapon")
 
-    # cape -----------------------------------------------------------------
-    cape = taper_box("cape", (-0.150, 0.0, 0.520), (-0.035, 0.0, 1.930),
-                     0.640, 0.075, 0.420, 0.060, M["cape"], "spine")
-    taper_box("cape_mantle", (-0.055, 0.0, 1.880), (-0.020, 0.0, 2.010),
+    # cape (sweeps well behind the body so the red reads in a 3/4 side view) --
+    taper_box("cape", (-0.300, 0.0, 0.400), (-0.030, 0.0, 1.920),
+              0.700, 0.100, 0.400, 0.070, M["cape"], "spine")
+    taper_box("cape_mantle", (-0.060, 0.0, 1.880), (-0.020, 0.0, 2.010),
               0.520, 0.090, 0.360, 0.080, M["cape"], "spine")
-    for i, yy in enumerate((-0.230, -0.115, 0.0, 0.115, 0.230)):
-        prism("cape_jag_%d" % i, (-0.150, yy, 0.525), Vector((0, 1, 0)), Vector((0, 0, 1)),
+    for i, yy in enumerate((-0.260, -0.130, 0.0, 0.130, 0.260)):
+        prism("cape_jag_%d" % i, (-0.300, yy, 0.405), Vector((0, 1, 0)), Vector((0, 0, 1)),
               Vector((1, 0, 0)),
-              [(-0.062, 0.0), (0.062, 0.0), (0.0, -0.130 - 0.03 * (i % 2))],
-              0.075, M["cape_d"], "spine")
-    # cape folds (dark vertical strips)
-    for i, yy in enumerate((-0.170, 0.170)):
-        prism("cape_fold_%d" % i, (-0.180, yy, 1.180), Vector((0, 1, 0)), Vector((0, 0, 1)),
+              [(-0.066, 0.0), (0.066, 0.0), (0.0, -0.140 - 0.03 * (i % 2))],
+              0.100, M["cape_d"], "spine")
+    # cape folds (dark vertical strips give the cloth some read)
+    for i, yy in enumerate((-0.180, 0.180)):
+        prism("cape_fold_%d" % i, (-0.215, yy, 1.100), Vector((0, 1, 0)), Vector((0, 0, 1)),
               Vector((1, 0, 0)),
-              [(-0.030, 0.0), (0.030, 0.0), (0.030, 0.620), (-0.030, 0.620)],
-              0.020, M["cape_d"], "spine")
+              [(-0.034, 0.0), (0.034, 0.0), (0.034, 0.720), (-0.034, 0.720)],
+              0.024, M["cape_d"], "spine")
+    # red tabard hanging from the belt over the faulds
+    prism("tabard", (0.212, 0.0, 1.160), Vector((0, 0, 1)), Vector((0, 1, 0)),
+          Vector((1, 0, 0)),
+          [(0.300, -0.145), (0.300, 0.145), (-0.020, 0.160), (-0.140, 0.0),
+           (-0.020, -0.160)],
+          0.032, M["cape"], "hips")
+    prism("tabard_trim", (0.216, 0.0, 1.160), Vector((0, 0, 1)), Vector((0, 1, 0)),
+          Vector((1, 0, 0)),
+          [(0.300, -0.145), (0.300, 0.145), (0.240, 0.150), (0.240, -0.150)],
+          0.030, M["brass"], "hips")
 
     BASE = {
         "spine": {"ry": 2.0, "rz": -2.0},
