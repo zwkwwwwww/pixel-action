@@ -1,0 +1,34 @@
+# 系统
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 日志与临时文件
+*.log
+*.tmp
+*.bak
+
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+out/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Web
+coverage/
+.env
+.env.local
+
+# ── 本项目专用 ──
+# art-source/ 保存 Blender 渲染原始帧、ComfyUI 原图与中间产物，体积大且可由脚本重新生成，不入库。
+# assets/ 保存游戏实际加载的成品精灵表/背景/音频，必须入库，否则新克隆无法运行。
+art-source/
+tmp/
+*.pyc
+__pycache__/
+*.blend1
