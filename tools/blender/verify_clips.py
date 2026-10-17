@@ -204,8 +204,10 @@ def check_frames() -> None:
 
 
 def check_silhouette() -> None:
-    print("\n[3] silhouette size (contract: 56/96 cell px tall)")
-    for clip in ("idle", "walk", "special"):
+    print("\n[3] standing silhouette size (contract: 56/96 cell px tall)")
+    # Only standing clips: attack/special frames legitimately include a raised
+    # blade that is much taller than the character.
+    for clip in ("idle", "walk"):
         heights = []
         frames = [HERO_DIR / clip / f"{clip}_{i:02d}.png" for i in range(CLIPS[clip][0])]
         if not all(p.exists() for p in frames):
@@ -241,7 +243,8 @@ def check_cells() -> None:
                 continue
             full = np.array(Image.open(full_p))
             want = full[SUPERSAMPLE // 2 :: SUPERSAMPLE, SUPERSAMPLE // 2 :: SUPERSAMPLE].copy()
-            want[..., 3] = np.where(want[..., 3] >= int(ALPHA_THRESHOLD * 255), 255, 0)
+            keep = int(np.ceil(ALPHA_THRESHOLD * 255))
+            want[..., 3] = np.where(want[..., 3] >= keep, 255, 0)
             got = np.array(im)
             if not np.array_equal(got, want):
                 d = int((got != want).any(axis=-1).sum())

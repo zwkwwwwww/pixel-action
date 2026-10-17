@@ -32,3 +32,7 @@ tmp/
 *.pyc
 __pycache__/
 *.blend1
+
+# Blender 工程源文件要入库（可复现），但渲染帧不入库
+!art-source/blender/*.blend
+!art-source/blender/enemies/*.blend

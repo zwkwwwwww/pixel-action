@@ -59,6 +59,7 @@ function workflow(imageName, seed) {
 async function walk(dir) {
   const out = [];
   for (const e of await readdir(dir, { withFileTypes: true })) {
+    if (e.name.startsWith('_') || e.name.startsWith('.')) continue; // 跳过 _cell96 / 中间产物
     const p = join(dir, e.name);
     if (e.isDirectory()) out.push(...await walk(p));
     else if (extname(e.name).toLowerCase() === '.png') out.push(p);

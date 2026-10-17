@@ -400,21 +400,26 @@ def clip_idle():
 
 
 def clip_walk():
+    # sword arm stays fairly steady (weapon counter-rotates); free arm swings
     return [
-        pose(hips={"tz": -0.015, "ty": 0.010}, spine={"ry": 6, "rz": 6},
-             head={"ry": -5, "rz": -4}, legR={"ry": -26}, legL={"ry": 22},
-             armR={"ry": 18}, armL={"ry": -16}, weapon={"ry": 4}),
-        pose(hips={"tz": 0.008}, spine={"ry": 4, "rz": 2}, head={"ry": -3, "rz": -2},
-             legR={"ry": -12}, legL={"ry": 10}, armR={"ry": 6}, armL={"ry": -6}),
-        pose(hips={"tz": -0.005}, spine={"ry": 4, "rz": -2}, head={"ry": -3},
-             legR={"ry": 6}, legL={"ry": -6}, armR={"ry": -4}, armL={"ry": 4}),
-        pose(hips={"tz": -0.015, "ty": -0.010}, spine={"ry": 6, "rz": -6},
-             head={"ry": -5, "rz": 4}, legR={"ry": 22}, legL={"ry": -26},
-             armR={"ry": -16}, armL={"ry": 18}, weapon={"ry": -4}),
-        pose(hips={"tz": 0.008}, spine={"ry": 4, "rz": -2}, head={"ry": -3, "rz": 2},
-             legR={"ry": 10}, legL={"ry": -12}, armR={"ry": -6}, armL={"ry": 6}),
-        pose(hips={"tz": -0.005}, spine={"ry": 4, "rz": 2}, head={"ry": -3},
-             legR={"ry": -6}, legL={"ry": 6}, armR={"ry": 4}, armL={"ry": -4}),
+        pose(hips={"tz": -0.022, "ty": 0.012}, spine={"ry": 7, "rz": 8},
+             head={"ry": -6, "rz": -5}, legR={"ry": -38}, legL={"ry": 32},
+             armR={"ry": 8}, armL={"ry": -24}, weapon={"ry": -8}),
+        pose(hips={"tz": 0.012}, spine={"ry": 5, "rz": 3}, head={"ry": -4, "rz": -2},
+             legR={"ry": -16}, legL={"ry": 13}, armR={"ry": 4}, armL={"ry": -8},
+             weapon={"ry": -4}),
+        pose(hips={"tz": -0.008}, spine={"ry": 5, "rz": -3}, head={"ry": -4},
+             legR={"ry": 12}, legL={"ry": -12}, armR={"ry": -4}, armL={"ry": 8},
+             weapon={"ry": 4}),
+        pose(hips={"tz": -0.022, "ty": -0.012}, spine={"ry": 7, "rz": -8},
+             head={"ry": -6, "rz": 5}, legR={"ry": 32}, legL={"ry": -38},
+             armR={"ry": -8}, armL={"ry": 28}, weapon={"ry": 8}),
+        pose(hips={"tz": 0.012}, spine={"ry": 5, "rz": -3}, head={"ry": -4, "rz": 2},
+             legR={"ry": 13}, legL={"ry": -16}, armR={"ry": -4}, armL={"ry": 10},
+             weapon={"ry": 4}),
+        pose(hips={"tz": -0.008}, spine={"ry": 5, "rz": 3}, head={"ry": -4},
+             legR={"ry": -12}, legL={"ry": 12}, armR={"ry": 4}, armL={"ry": -8},
+             weapon={"ry": -4}),
     ]
 
 
@@ -422,8 +427,8 @@ def clip_attack1():
     # wide horizontal cut: torso yaw winds up, arm sweeps, blade stays ~level
     return [
         pose(hips={"tz": -0.02, "rz": -8}, spine={"ry": -2, "rz": -28},
-             head={"rz": -12}, armR={"ry": -35, "rx": -22}, armL={"ry": 22},
-             legR={"ry": -8}, legL={"ry": 8}, weapon={"ry": 10}),
+             head={"rz": -12}, armR={"ry": -105, "rx": -14}, armL={"ry": 22},
+             legR={"ry": -8}, legL={"ry": 8}, weapon={"ry": -30}),
         pose(hips={"tz": -0.01, "rz": 2}, spine={"ry": 4, "rz": 4}, head={"rz": 4},
              armR={"ry": -76, "rx": -10}, armL={"ry": -8}, weapon={"ry": 26}),
         pose(hips={"tz": -0.02, "rz": 14, "tx": 0.05}, spine={"ry": 9, "rz": 30},
@@ -490,34 +495,36 @@ def clip_dodge():
 
 def clip_hurt():
     return [
-        pose(hips={"tz": -0.03}, spine={"ry": -18}, head={"ry": -22},
-             armR={"ry": 30}, armL={"ry": -40}, legR={"ry": -8}, legL={"ry": 10},
-             root={"tx": -0.05}),
-        pose(hips={"tz": -0.06}, spine={"ry": -30, "rz": 6}, head={"ry": -32},
-             armR={"ry": 44, "rx": -12}, armL={"ry": -56}, legR={"ry": -14},
-             legL={"ry": 18}, root={"tx": -0.11}),
+        pose(hips={"tz": -0.03, "rz": 4}, spine={"ry": -22, "rz": -6}, head={"ry": -26},
+             armR={"ry": 38, "rx": -14}, armL={"ry": -48}, legR={"ry": -10}, legL={"ry": 12},
+             root={"tx": -0.06}),
+        pose(hips={"tz": -0.07, "rz": 8}, spine={"ry": -38, "rz": -12}, head={"ry": -38},
+             armR={"ry": 54, "rx": -22}, armL={"ry": -64}, legR={"ry": -18},
+             legL={"ry": 22}, root={"tx": -0.14}),
     ]
 
 
 def clip_death():
-    # kneel collapse (single rigid leg bone: no true floor contact, see README)
+    # topple backwards around the feet (rigid leg bones cannot kneel, so the
+    # whole body pivots on `root` and ends lying flat on the ground)
     return [
-        pose(hips={"tz": -0.02}, spine={"ry": -8}, head={"ry": -12},
-             armR={"ry": 16}, armL={"ry": -16}),
-        pose(hips={"tz": -0.12}, spine={"ry": 14}, head={"ry": 8},
-             legR={"ry": 22}, legL={"ry": 20}, armR={"ry": -10}, armL={"ry": 24}),
-        pose(hips={"tz": -0.30}, spine={"ry": 32}, head={"ry": 18},
-             legR={"ry": 44}, legL={"ry": 40}, armR={"ry": 4}, armL={"ry": 36},
-             weapon={"ry": 14}),
-        pose(hips={"tz": -0.44}, spine={"ry": 46}, head={"ry": 26},
-             legR={"ry": 58}, legL={"ry": 54}, armR={"ry": 16}, armL={"ry": 48},
-             weapon={"ry": 22}),
-        pose(hips={"tz": -0.53}, spine={"ry": 58}, head={"ry": 32},
-             legR={"ry": 66}, legL={"ry": 62}, armR={"ry": 24}, armL={"ry": 56},
-             weapon={"ry": 30}),
-        pose(hips={"tz": -0.56}, spine={"ry": 64}, head={"ry": 36},
-             legR={"ry": 70}, legL={"ry": 66}, armR={"ry": 28}, armL={"ry": 60},
-             weapon={"ry": 34}),
+        pose(hips={"tz": -0.02}, spine={"ry": -10}, head={"ry": -14},
+             armR={"ry": 18}, armL={"ry": -18}),
+        pose(root={"ry": -10, "tx": -0.04}, hips={"tz": -0.05}, spine={"ry": -16},
+             head={"ry": -18}, legR={"ry": -8}, legL={"ry": 10},
+             armR={"ry": 30, "rx": -12}, armL={"ry": -34}),
+        pose(root={"ry": -30, "tx": -0.02}, hips={"tz": -0.09}, spine={"ry": -6},
+             head={"ry": -10}, legR={"ry": -18}, legL={"ry": -6},
+             armR={"ry": 44, "rx": -20}, armL={"ry": -40}, weapon={"ry": 10}),
+        pose(root={"ry": -54, "tx": 0.18}, hips={"tz": -0.04}, spine={"ry": 6},
+             head={"ry": 4}, legR={"ry": -26}, legL={"ry": -18},
+             armR={"ry": 40, "rx": -24}, armL={"ry": -26}, weapon={"ry": 14}),
+        pose(root={"ry": -72, "tx": 0.40, "tz": 0.04}, spine={"ry": 6}, head={"ry": 8},
+             legR={"ry": -20}, legL={"ry": -14}, armR={"ry": 24, "rx": -20},
+             armL={"ry": -12}, weapon={"ry": 8}),
+        pose(root={"ry": -82, "tx": 0.55, "tz": 0.09}, spine={"ry": 4}, head={"ry": 10},
+             legR={"ry": -12}, legL={"ry": -6}, armR={"ry": 12, "rx": -14},
+             armL={"ry": -4}, weapon={"ry": 4}),
     ]
 
 
