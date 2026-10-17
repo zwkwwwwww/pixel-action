@@ -26,22 +26,25 @@ def parse_cell(s):
     return int(w), int(h)
 
 
-def standing_scale(ref_path: Path, height: int, threshold: int) -> float:
-    """用一张「站姿参考帧」定死整个角色的缩放。
+def standing_scale(ref_path: Path, height: int, threshold: int) -> tuple[float, int]:
+    """用一张「站姿参考帧」定死整个角色的缩放与脚底线。
 
     为什么不能逐帧按包围盒高度缩放：倒地帧的高度只有站姿的 1/3，逐帧归一化会让角色
     在死亡动画里突然被放大 3 倍（实测宽度冲到 123px 撑爆 96 的 cell）。
+
+    脚底线同样取参考帧：某些挥砍姿势武器会低于脚底，若按逐帧 bbox 底部贴锚点，
+    那一帧整个人会「浮」起来（敌人实测最深 -0.29 world ≈ 10px）。
     """
     im = Image.open(ref_path).convert("RGBA")
     a = im.getchannel("A").point(lambda v: 255 if v >= threshold else 0)
     bb = a.getbbox()
     if not bb:
         raise ValueError(f"参考帧全透明: {ref_path}")
-    return height / (bb[3] - bb[1])
+    return height / (bb[3] - bb[1]), bb[3]
 
 
 def compose(restyled_path: Path, alpha_path: Path, height: int, cell, anchor, colors: int,
-            threshold: int, fixed_scale: float | None = None):
+            threshold: int, fixed_scale: float | None = None, ref_feet_y: int | None = None):
     restyled = Image.open(restyled_path).convert("RGB")
     src = Image.open(alpha_path).convert("RGBA")
     if restyled.size != src.size:
@@ -67,8 +70,18 @@ def compose(restyled_path: Path, alpha_path: Path, height: int, cell, anchor, co
     sprite = rgb.convert("RGBA")
     sprite.putalpha(a)
     canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
-    canvas.alpha_composite(sprite, (anchor[0] - nw // 2, anchor[1] - nh))
-    return canvas, {"bbox": [x0, y0, x1, y1], "scaled": [nw, nh], "scale": round(scale, 4)}
+
+    # 脚底线：优先用参考帧定死的线（武器低于脚底时不让人物整体上浮），
+    # 姿势抬脚时仍允许按当前 bbox 底部自然上抬。
+    eff_bottom = y1
+    if ref_feet_y is not None and y1 > ref_feet_y + 4:
+        eff_bottom = ref_feet_y
+    paste_y = anchor[1] - round((eff_bottom - y0) * scale)
+    canvas.alpha_composite(sprite, (anchor[0] - nw // 2, paste_y))
+    return canvas, {
+        "bbox": [x0, y0, x1, y1], "scaled": [nw, nh],
+        "scale": round(scale, 4), "effBottom": eff_bottom,
+    }
 
 
 def main() -> int:
@@ -94,13 +107,14 @@ def main() -> int:
         return 2
 
     fixed = None
+    ref_feet = None
     if args.ref:
         try:
-            fixed = standing_scale(Path(args.ref), args.height, args.threshold)
+            fixed, ref_feet = standing_scale(Path(args.ref), args.height, args.threshold)
         except ValueError as e:
             print(f"错误: {e}", file=sys.stderr)
             return 2
-        print(json.dumps({"ref": args.ref, "fixedScale": round(fixed, 4)}, ensure_ascii=False))
+        print(json.dumps({"ref": args.ref, "fixedScale": round(fixed, 4), "refFeetY": ref_feet}, ensure_ascii=False))
 
     n = 0
     for f in files:
@@ -110,7 +124,7 @@ def main() -> int:
             print(f"错误: 缺少 alpha 源 {apath}", file=sys.stderr)
             return 2
         try:
-            img, _info = compose(f, apath, args.height, cell, anchor, args.colors, args.threshold, fixed)
+            img, _info = compose(f, apath, args.height, cell, anchor, args.colors, args.threshold, fixed, ref_feet)
         except ValueError as e:
             print(f"错误 {f}: {e}", file=sys.stderr)
             return 1

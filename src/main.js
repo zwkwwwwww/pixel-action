@@ -203,6 +203,8 @@ function drawBlock(x, y, w, h, color, outline = '#0a0d12') {
 }
 
 const ENEMY_COLORS = { grunt: '#5ec27a', brute: '#d08a3e', ranger: '#9b7bd8', boss: '#d2483f' };
+// 血条要挂在「精灵头顶」，用契约里的可见高度而不是方块尺寸
+const SPRITE_H = { hero: 56, grunt: 46, brute: 52, ranger: 48, boss: 112 };
 
 /** 确定性哈希：地面砖块的明暗不能用 Math.random（会每帧闪烁）。 */
 function hash2(a, b) {
@@ -405,12 +407,13 @@ function draw() {
 
     // 血条（玩家不画，HUD 已经有了；画在头顶只会挡脸）
     if (!a.dead && kind !== 'player') {
-      const w = a.kind === 'boss' ? 52 : 22;
+      const w = a.kind === 'boss' ? 64 : 22;
       const bx = Math.round(sx - w / 2);
-      const by = Math.round(sy - (kind === 'player' ? HERO_H : (a.kind === 'boss' ? 44 : 28)) - airborne - (kind === 'player' ? 10 : 8));
+      const topH = SPRITE_H[a.kind] || (a.kind === 'boss' ? 112 : 48);
+      const by = Math.round(sy - topH - airborne - 7);
       ctx.fillStyle = '#0a0d12';
       ctx.fillRect(bx - 1, by - 1, w + 2, 4);
-      ctx.fillStyle = kind === 'player' ? '#59c26a' : '#d2483f';
+      ctx.fillStyle = '#d2483f';
       ctx.fillRect(bx, by, Math.round((w * a.hp) / a.maxHp), 2);
     }
   }
@@ -467,21 +470,31 @@ function draw() {
 
   if (level.bossSpawned && level.bossActor && !level.bossActor.dead) {
     const bw = 320;
-    ctx.fillStyle = 'rgba(8,10,16,.8)';
-    ctx.fillRect((VIEW_W - bw) / 2, VIEW_H - 18, bw, 11);
+    const by = VIEW_H - 34;
+    ctx.fillStyle = 'rgba(8,10,16,.85)';
+    ctx.fillRect((VIEW_W - bw) / 2 - 2, by - 2, bw + 4, 13);
+    ctx.fillStyle = '#2a1418';
+    ctx.fillRect((VIEW_W - bw) / 2, by, bw, 9);
     ctx.fillStyle = '#d2483f';
-    ctx.fillRect((VIEW_W - bw) / 2 + 1, VIEW_H - 17, Math.round((bw - 2) * level.bossActor.hp / level.bossActor.maxHp), 9);
+    ctx.fillRect((VIEW_W - bw) / 2 + 1, by + 1, Math.round((bw - 2) * level.bossActor.hp / level.bossActor.maxHp), 7);
+    drawText(ctx, 'BOSS', (VIEW_W - bw) / 2, by - 12, '#ff8b8b', 1, '#05070b');
   }
 
   if (state.won || state.lost) {
-    ctx.fillStyle = state.won ? 'rgba(14,40,26,.86)' : 'rgba(40,10,12,.86)';
+    ctx.fillStyle = state.won ? 'rgba(8,26,18,.93)' : 'rgba(28,6,8,.93)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+    // 中央牌匾
+    ctx.fillStyle = state.won ? 'rgba(20,44,30,.9)' : 'rgba(50,14,16,.9)';
+    ctx.fillRect(40, VIEW_H / 2 - 46, VIEW_W - 80, 96);
+    ctx.fillStyle = state.won ? '#3f7a55' : '#7a3f45';
+    ctx.fillRect(40, VIEW_H / 2 - 46, VIEW_W - 80, 1);
+    ctx.fillRect(40, VIEW_H / 2 + 49, VIEW_W - 80, 1);
     const title = state.won ? 'STAGE CLEAR' : 'YOU DIED';
     const scale = 3;
-    drawText(ctx, title, (VIEW_W - textWidth(title, scale)) / 2, VIEW_H / 2 - 24,
+    drawText(ctx, title, (VIEW_W - textWidth(title, scale)) / 2, VIEW_H / 2 - 26,
       state.won ? '#ffd166' : '#ff8b8b', scale, '#05070b');
-    const sub = 'PRESS R TO RESTART';
-    drawText(ctx, sub, (VIEW_W - textWidth(sub, 1)) / 2, VIEW_H / 2 + 18, '#cfd8e6', 1, '#05070b');
+    const sub = state.won ? 'THE RUSTED MOON FALLS SILENT' : 'PRESS R TO RESTART';
+    drawText(ctx, sub, (VIEW_W - textWidth(sub, 1)) / 2, VIEW_H / 2 + 24, '#cfd8e6', 1, '#05070b');
   }
 }
 

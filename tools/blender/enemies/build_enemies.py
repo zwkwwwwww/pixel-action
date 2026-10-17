@@ -1217,11 +1217,17 @@ def build_boss():
     box_frame("visor", (0.176, 0.0, 2.165), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.020, 0.120, 0.045, M["iron_d"], "head")
     for side in (-1, 1):
-        box_frame("eye_%d" % side, (0.198, 0.056 * side, 2.164), Vector((1, 0, 0)),
-                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.022, 0.042, 0.032, M["eye"], "head")
+        box_frame("eye_%d" % side, (0.192, 0.062 * side, 2.164), Vector((1, 0, 0)),
+                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.026, 0.048, 0.036, M["eye"], "head")
     # nasal ridge splits the two eyes into a readable "gaze"
     box_frame("nasal_boss", (0.214, 0.0, 2.164), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.020, 0.014, 0.040, M["iron_d"], "head")
+    # corner glow: the game camera is a 3/4 SIDE view, so the +X-facing slit is
+    # foreshortened to a sliver; this wraps the same glow around the helm corner
+    for side in (-1, 1):
+        box_frame("eye_corner_%d" % side, (0.150, 0.118 * side, 2.166),
+                  Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+                  0.034, 0.030, 0.032, M["eye"], "head")
     for side in (-1, 1):
         # cheek vents flanking the eye slit
         prism("vent_%d" % side, (0.196, 0.092 * side, 2.115), Vector((0, 1, 0)),

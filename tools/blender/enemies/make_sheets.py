@@ -87,7 +87,7 @@ def build(kind):
     cols = max(n for _c, n, _f in CLIPS)
     header_h = 86
     row_h = cpx + 16
-    strip_h = cell * 2 + 90
+    strip_h = cell * 3 + 74
     w = margin * 2 + label_w + cols * (cpx + gap)
     h = header_h + len(CLIPS) * row_h + strip_h + margin
     canvas = Image.new("RGB", (w, h), (22, 23, 27))
@@ -126,36 +126,91 @@ def build(kind):
 
     # --- readability strip -------------------------------------------------
     y = header_h + len(CLIPS) * row_h + 12
+    strip_h = cell + 2 * cell + 74
     d.rectangle([margin, y, w - margin, y + strip_h - 16], fill=(30, 31, 36))
     d.text((margin + 10, y + 10),
-           "readability @ true size (1x, %dpx) / silhouette / 2x  -  idle f0, walk f0, attack1 f2, hurt f1, death f5"
-           % height, font=f_lab, fill=(230, 230, 236))
-    y2 = y + 40
+           "readability @ true size (1x, %dpx) + silhouette, then 2x zoom  -  "
+           "idle f0, walk f0, attack1 f2, hurt f1, death f5" % height,
+           font=f_lab, fill=(230, 230, 236))
+
+    # row 1: 1x on a game-dark background + 1x pure silhouette
+    y1 = y + 40
     x = margin + 14
-    for j, (clip, i) in enumerate(HERO_FRAMES):
+    for clip, i in HERO_FRAMES:
         p = cell_dir / clip / ("%s_%02d.png" % (clip, i))
         if not p.exists():
             continue
         im = Image.open(p).convert("RGBA")
-        paste(canvas, im, x, y2, 1, bg=(18, 20, 28))          # 1x on game bg
+        paste(canvas, im, x, y1, 1, bg=(18, 20, 28))
         bb = alpha_bbox(im)
-        d.text((x, y2 + cell + 4), clip, font=f_tiny, fill=(170, 172, 182))
+        d.text((x, y1 + cell + 3), clip, font=f_tiny, fill=(176, 178, 188))
         if bb:
-            d.text((x, y2 + cell + 18), "%dx%d" % (bb[2] - bb[0], bb[3] - bb[1]),
-                   font=f_tiny, fill=(120, 122, 134))
-        # silhouette at 1x
-        sx = x + cell + 12
+            d.text((x + 4, y1 + cell + 16), "%dx%d" % (bb[2] - bb[0], bb[3] - bb[1]),
+                   font=f_tiny, fill=(122, 124, 136))
         sil = Image.new("RGBA", im.size, (0, 0, 0, 0))
         sil.paste((8, 8, 10, 255), (0, 0), im)
-        paste(canvas, sil, sx, y2, 1, bg=(226, 226, 232))
-        # 2x zoom
-        paste(canvas, im, sx + cell + 12, y2, 2, bg=(18, 20, 28))
-        x = sx + cell + 12 + cell * 2 + 18
+        paste(canvas, sil, x + cell + 6, y1, 1, bg=(226, 226, 232))
+        x += 2 * cell + 18
+
+    # row 2: 2x zoom
+    y2 = y1 + cell + 34
+    x = margin + 14
+    for clip, i in HERO_FRAMES:
+        p = cell_dir / clip / ("%s_%02d.png" % (clip, i))
+        if not p.exists():
+            continue
+        im = Image.open(p).convert("RGBA")
+        paste(canvas, im, x, y2, 2, bg=(18, 20, 28))
+        x += 2 * cell + 18
 
     EVIDENCE.mkdir(parents=True, exist_ok=True)
     canvas.save(sheet)
     print("sheet:", sheet, canvas.size)
     return sheet
+
+
+def build_lineup():
+    """One row: hero + all four enemies at true in-game size, on a shared floor."""
+    roster = [("hero", ROOT / "art-source" / "blender" / "hero" / "_cell96", 96, 56, 88)]
+    for kind, (cell, height, _b) in SPEC.items():
+        anchor_y = 88 if cell == 96 else 144
+        roster.append((kind, ENEMY_DIR / kind / ("_cell%d" % cell), cell, height, anchor_y))
+
+    scale = 2
+    pad = 26
+    gap = 26
+    w = pad * 2 + sum(cell * scale for _n, _p, cell, _h, _a in roster) + gap * (len(roster) - 1)
+    header = 100
+    floor = header + 160 * scale               # tallest cell (boss 160) sits here
+    h = floor + 56
+    canvas = Image.new("RGB", (w, h), (24, 26, 33))
+    d = ImageDraw.Draw(canvas)
+    f_head, f_small, f_lab = font(26), font(15), font(15)
+    d.text((pad, 14), "enemy roster vs hero - true in-game size", font=f_head,
+           fill=(240, 240, 244))
+    d.text((pad, 48), "hero 56px | grunt 46 | brute 52 | ranger 48 | boss 112  "
+                      "(cells 96/96/96/96/160, nearest 2x here)", font=f_small,
+           fill=(158, 160, 170))
+
+    x = pad
+    for name, path, cell, height, anchor_y in roster:
+        p = path / "idle" / "idle_00.png"
+        if not p.exists():
+            d.text((x, floor - 40), name + " missing", font=f_small, fill=(255, 90, 90))
+            x += cell * scale + gap
+            continue
+        im = Image.open(p).convert("RGBA")
+        im = im.resize((im.width * scale, im.height * scale), Image.NEAREST)
+        top = floor - anchor_y * scale
+        canvas.paste(im, (x, top), im)
+        d.text((x, floor + 8), name, font=f_lab, fill=(240, 240, 244))
+        d.text((x, floor + 26), "%dpx" % height, font=f_small, fill=(140, 200, 150))
+        x += cell * scale + gap
+    d.line([pad, floor, w - pad, floor], fill=(92, 92, 106), width=2)
+    out = EVIDENCE / "enemy-lineup.png"
+    canvas.save(out)
+    print("lineup:", out, canvas.size)
+    return out
 
 
 def main():
@@ -168,6 +223,7 @@ def main():
             print("skip %s: no render report" % kind, file=sys.stderr)
             continue
         build(kind)
+    build_lineup()
     return 0
 
 

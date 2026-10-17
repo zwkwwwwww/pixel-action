@@ -26,16 +26,20 @@
 
 ## 当前状态
 
-- 当前 Phase：**Phase 2/3 进行中**（hero 9 剪辑已接入；敌人 4 角色重塑中；音频生成中）
+- 当前 Phase：**贯穿 Phase 0~5 的垂直切片已全部打通，待人类验收**
 - 当前分支：`main`
-- 运行状态：**正常**（标题画面 → Enter → 可玩）
-- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **72 pass / 0 fail**
-- 最近验证证据：
-  - 标题 `art-source/evidence/title.png`；战斗 `art-source/evidence/fx-combat.png`、`hero-sprite-combat.png`
-  - hero 精灵表 `assets/sprites/hero.png`（9 剪辑 41 帧，96×96，固定缩放 0.2478）
-  - 帧间一致性 `art-source/reports/frame-diff-hero.json`：9/9 剪辑通过（最大 0.046，阈值 0.22）
-  - CDP 实测：`internal:480×270 / scale:3 / spriteDrawn>0 / damageDealt:80 / dodgeInvuln:15 / consoleErrors:[]`
-  - 自动通关单测：无作弊 bot 打通 3 波 + Boss
+- 运行状态：**正常**
+- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **72 pass / 0 fail**（含无作弊自动通关）
+- 最近验证证据（全部实测）：
+  - 标题 `art-source/evidence/title.png`；战斗 `e2e-wave.png`、`fx-combat.png`；Boss `e2e-boss.png`；通关 `e2e-win.png`
+  - 素材总览 `art-source/evidence/contact-sheet.png`
+  - 精灵表：`assets/sprites/{hero,grunt,brute,ranger,boss}.png` + `.json`（hero 9 剪辑 41 帧；敌人各 5 剪辑 22 帧）
+  - 帧间一致性：`art-source/reports/frame-diff-*.json` → **所有剪辑最大 0.057，阈值 0.22，全绿**
+  - CDP 端到端：`artLoaded` 5/5、`artMissing:[]`、`consoleErrors:[]`；
+    真实按键清完第 1 波 → `segmentIndex:1`；Boss 出场 `hp:420`、`bodyHalfW:20`、`bgm:bgm_boss`；
+    18 次攻击造成 **136 伤害**、玩家被反击到 hp 94；击杀 Boss → `won:true`、BGM 停、播放 `sfx_victory`
+  - 音频：`ctxState:"running"`、`loaded:8 / failed:[]`、实际播出 `sfx_swing/sfx_hit/sfx_death/sfx_victory` + `bgm_battle/bgm_boss`
+  - 性能：常规 60fps（逻辑 0.04ms / 绘制 0.37ms）；**240 粒子 + 300 飘字**压力下仍 **60.4fps**（绘制 0.62ms，上限 8ms）
 
 ## 运行方式（已实测）
 
