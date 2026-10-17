@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
+<title>锈月回响 / Echoes of the Rusted Moon</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 8 8'%3E%3Crect width='8' height='8' fill='%23151a24'/%3E%3Crect x='2' y='2' width='4' height='4' fill='%23c9a227'/%3E%3C/svg%3E" />
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%;
+    background: #05070b; overflow: hidden;
+    touch-action: none;
+  }
+  #stage {
+    position: fixed; inset: 0;
+    display: grid; place-items: center;
+    background: #05070b;
+  }
+  /* 像素画的灵魂：显示层必须 nearest-neighbor，且尺寸永远是 480x270 的整数倍 */
+  #game {
+    display: block;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    background: #0b0e14;
+    box-shadow: 0 0 0 2px #1c2433, 0 24px 60px rgba(0,0,0,.75);
+  }
+</style>
+</head>
+<body>
+  <div id="stage"><canvas id="game" width="480" height="270"></canvas></div>
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

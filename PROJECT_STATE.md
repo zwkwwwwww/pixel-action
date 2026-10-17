@@ -26,12 +26,23 @@
 
 ## 当前状态
 
-- 当前 Phase：**Phase -1 已完成，等待人类批准 Total Plan**
-- 最新 Commit：（尚未提交）
+- 当前 Phase：**Phase 0 完成（渲染循环 + 占位方块走位），进入 Phase 1**
+- 最新 Commit：（见 git log）
 - 当前分支：`main`
-- 运行状态：未开始
-- 最近测试结果：无
-- 最近验证证据：无
+- 运行状态：**正常**
+- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **12 pass / 0 fail**（缩放 7 + 输入 5）
+- 最近验证证据：`art-source/evidence/phase0-1080.png`；CDP 探针实测 `internal:480×270 / scale:3 /
+  pixelated:crisp-edges / tickAdvanced:31 / movedRight:true / movedDown:true / bodyOverflow:false /
+  consoleErrors:[] / exceptions:[]`
+
+## 运行方式（已实测）
+
+| 用途 | 命令 |
+| --- | --- |
+| 启动静态服务器 | `python -m http.server 9500 --bind 127.0.0.1`（项目根目录；日志必须重定向到文件，否则管道写满会卡死请求） |
+| 打开游戏 | `http://127.0.0.1:9500/` |
+| 单测 | `node --test "tests/**/*.test.mjs"` |
+| 浏览器取证 | `node tools/browser-probe.mjs --url http://127.0.0.1:9500/ --wait 1800 --shot art-source/evidence/x.png --eval-file tools/probes/phase0.js` |
 
 ## 环境事实（已实测）
 
