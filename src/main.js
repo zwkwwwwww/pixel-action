@@ -149,7 +149,11 @@ let audioReady = false;
 function ensureAudio() {
   if (audioReady) return;
   audioReady = true;
-  initAudio().then(() => { state.audio = audioSnapshot(); });
+  initAudio().then(() => {
+    state.audio = audioSnapshot();
+    // 解码完成时如果已经在游戏里，补上 BGM（Enter 时音频往往还没加载完）
+    if (state.mode === 'play') playBgm(level.bossSpawned ? 'bgm_boss' : 'bgm_battle', { volume: 0.45 });
+  });
 }
 addEventListener('keyup', (e) => {
   const k = KEYMAP[e.code];
@@ -176,6 +180,7 @@ function logicStep() {
       state.shake = Math.min(6, state.shake + 3);
       state.flash = Math.max(state.flash, ev.killed ? 0.5 : 0.25);
       spawnHitFx(fx, ev);
+      playSfx('sfx_hit', { volume: ev.killed ? 0.8 : 0.55 });
     }
     state.lastEvents.push(ev);
   }

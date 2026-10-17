@@ -853,7 +853,7 @@ def build_brute():
     box_frame("visor", (0.128, 0.0, 1.336), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.016, 0.105, 0.030, M["iron_d"], "head")
     for side in (-1, 1):
-        ico("eye_%d" % side, (0.146, 0.048 * side, 1.338), 0.026, (0.55, 1.0, 0.80),
+        ico("eye_%d" % side, (0.148, 0.050 * side, 1.338), 0.034, (0.55, 1.05, 0.80),
             M["eye"], "head", subdiv=1)
     box_frame("nasal", (0.140, 0.0, 1.318), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.014, 0.024, 0.052, M["brass"], "head")
@@ -960,13 +960,13 @@ def build_ranger():
         "cloak": mat("ra_cloak", (0.215, 0.160, 0.315), rough=0.85, spec=0.2),
         "cloak_d": mat("ra_cloak_d", (0.115, 0.080, 0.175), rough=0.88, spec=0.18),
         "leather": mat("ra_leather", (0.22, 0.16, 0.14), rough=0.72),
-        "leather_d": mat("ra_leather_d", (0.14, 0.10, 0.10), rough=0.76),
+        "leather_d": mat("ra_leather_d", (0.235, 0.175, 0.155), rough=0.76),
         "skin": mat("ra_skin", (0.80, 0.66, 0.58), rough=0.60),
         "wood": mat("ra_wood", (0.33, 0.22, 0.13), rough=0.55),
-        "string": mat("ra_string", (0.76, 0.74, 0.66), rough=0.6),
+        "string": mat("ra_string", (0.52, 0.50, 0.44), rough=0.65),
         "metal": mat("ra_metal", (0.66, 0.68, 0.72), rough=0.34, metal=0.6),
         "accent": mat("ra_accent", (0.18, 0.44, 0.40), rough=0.5),
-        "feather": mat("ra_feather", (0.58, 0.50, 0.30), rough=0.7),
+        "feather": mat("ra_feather", (0.74, 0.64, 0.36), rough=0.7),
     }
 
     # legs -----------------------------------------------------------------
@@ -1000,12 +1000,12 @@ def build_ranger():
           0.055, M["leather_d"], "spine")
 
     # cape (behind, swept back, jagged hem) --------------------------------
-    taper_box("cape", (-0.105, 0.0, 0.330), (-0.020, 0.0, 0.995), 0.330, 0.055, 0.235, 0.050,
+    taper_box("cape", (-0.110, 0.0, 0.420), (-0.020, 0.0, 0.995), 0.335, 0.055, 0.235, 0.050,
               M["cloak_d"], "spine")
     taper_box("cape_top", (-0.035, 0.0, 0.985), (-0.010, 0.0, 1.055), 0.250, 0.060, 0.190, 0.055,
               M["cloak"], "spine")
     for i, yy in enumerate((-0.130, -0.043, 0.043, 0.130)):
-        prism("cape_jag_%d" % i, (-0.105, yy, 0.335), Vector((0, 1, 0)), Vector((0, 0, 1)),
+        prism("cape_jag_%d" % i, (-0.110, yy, 0.425), Vector((0, 1, 0)), Vector((0, 0, 1)),
               Vector((1, 0, 0)),
               [(-0.042, 0.0), (0.042, 0.0), (0.0, -0.075 - 0.02 * (i % 2))],
               0.055, M["cloak_d"], "spine")
@@ -1031,7 +1031,7 @@ def build_ranger():
     # shadowed eye band + two cold eyes
     prism("eye_band", (0.108, 0.0, 1.112), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
-          [(-0.078, 0.020), (0.078, 0.020), (0.072, -0.018), (-0.072, -0.018)],
+          [(-0.078, 0.016), (0.078, 0.016), (0.072, -0.012), (-0.072, -0.012)],
           0.036, M["cloak_d"], "head")
     for side in (-1, 1):
         ico("eye_%d" % side, (0.122, 0.038 * side, 1.108), 0.022, (0.55, 0.95, 0.70),
@@ -1087,7 +1087,7 @@ def build_ranger():
           0.036, M["leather"], "weapon")
     tip_a = hand + u * half + v * 0.136
     tip_b = hand - u * half + v * 0.136
-    tube("bowstring", tuple(tip_a), tuple(tip_b), 0.009, 0.009, 4, M["string"], "weapon")
+    tube("bowstring", tuple(tip_a), tuple(tip_b), 0.011, 0.011, 4, M["string"], "weapon")
 
     BASE = {
         "spine": {"ry": 3.0, "rz": -3.0},
@@ -1143,7 +1143,7 @@ def build_boss():
         "leather": mat("bo_leather", (0.150, 0.115, 0.110), rough=0.72),
         "rust": mat("bo_rust", (0.470, 0.255, 0.115), rough=0.66, metal=0.25),
     }
-    M["eye"] = emissive("bo_eye", (1.0, 0.26, 0.09), 24.0)
+    M["eye"] = emissive("bo_eye", (1.0, 0.14, 0.05), 2.6)
 
     # legs -----------------------------------------------------------------
     for side, tag in ((-1, "R"), (1, "L")):
@@ -1217,8 +1217,11 @@ def build_boss():
     box_frame("visor", (0.176, 0.0, 2.165), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.020, 0.120, 0.045, M["iron_d"], "head")
     for side in (-1, 1):
-        box_frame("eye_%d" % side, (0.204, 0.052 * side, 2.168), Vector((1, 0, 0)),
-                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.020, 0.040, 0.027, M["eye"], "head")
+        box_frame("eye_%d" % side, (0.198, 0.056 * side, 2.164), Vector((1, 0, 0)),
+                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.022, 0.042, 0.032, M["eye"], "head")
+    # nasal ridge splits the two eyes into a readable "gaze"
+    box_frame("nasal_boss", (0.214, 0.0, 2.164), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.020, 0.014, 0.040, M["iron_d"], "head")
     for side in (-1, 1):
         # cheek vents flanking the eye slit
         prism("vent_%d" % side, (0.196, 0.092 * side, 2.115), Vector((0, 1, 0)),
