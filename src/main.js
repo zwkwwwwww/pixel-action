@@ -7,6 +7,7 @@ import { WORLD } from './core/actor.js';
 import { createLevel, updateLevel, cameraLimit } from './core/level.js';
 import { enemyThink } from './core/ai.js';
 import { ATTACKS } from './core/attacks.js';
+import { loadSprites, drawActorSprite } from './render/sprites.js';
 
 const canvas = document.getElementById('game');
 const ctx = canvas.getContext('2d', { alpha: false });
@@ -49,10 +50,25 @@ const state = {
   drawnActors: 0,
   won: false,
   lost: false,
+  art: { loaded: [], missing: [], drawnSprites: 0 },
 };
 
-function applyViewport() {
-  const v = computeViewport(innerWidth, innerHeight);
+// —— 精灵资产（Phase 2/3 管线产物）：缺失时自动回退色块，不阻塞可玩 ——
+const SHEETS = {};
+const prevPos = new Map();
+(async () => {
+  const want = ['hero', 'grunt', 'brute', 'ranger', 'boss'];
+  await Promise.all(want.map(async (name) => {
+    try {
+      SHEETS[name] = await loadSprites(`assets/sprites/${name}`);
+      state.art.loaded.push(name);
+    } catch {
+      state.art.missing.push(name);
+    }
+  }));
+})();
+
+function applyViewport() {  const v = computeViewport(innerWidth, innerHeight);
   state.viewport = v;
   canvas.style.width = `${v.cssW}px`;
   canvas.style.height = `${v.cssH}px`;
@@ -181,19 +197,23 @@ function draw() {
     if (sx < -80 || sx > VIEW_W + 80) continue;
     const sy = GROUND_TOP + a.y;
     const airborne = a.z > 0 ? a.z : 0;
+    const p0 = prevPos.get(a.uid);
+    const moving = p0 ? Math.hypot(a.x - p0[0], a.y - p0[1]) > 0.05 : false;
+    prevPos.set(a.uid, [a.x, a.y]);
 
     if (kind === 'player') {
       const h = HERO_H;
-      // 影子
       ctx.fillStyle = 'rgba(0,0,0,.35)';
       ctx.fillRect(Math.round(sx - 10), Math.round(sy - 3), 20, 4);
-      // 闪避时半透明（无敌帧可视化）
       ctx.globalAlpha = a.invuln > 0 ? 0.55 : 1;
-      drawBlock(sx - HERO_W / 2, sy - h - airborne, HERO_W, h, a.state === 'attack' ? '#ff7a5c' : '#e0483c');
+      const drew = drawActorSprite(ctx, SHEETS.hero, a, sx, sy, moving);
+      if (drew) state.art.drawnSprites++;
+      if (!drew) {
+        drawBlock(sx - HERO_W / 2, sy - h - airborne, HERO_W, h, a.state === 'attack' ? '#ff7a5c' : '#e0483c');
+        ctx.fillStyle = '#ffd166';
+        ctx.fillRect(Math.round(a.facing > 0 ? sx + HERO_W / 2 - 2 : sx - HERO_W / 2 - 2), Math.round(sy - h + 5), 4, 8);
+      }
       ctx.globalAlpha = 1;
-      // 朝向
-      ctx.fillStyle = '#ffd166';
-      ctx.fillRect(Math.round(a.facing > 0 ? sx + HERO_W / 2 - 2 : sx - HERO_W / 2 - 2), Math.round(sy - h + 5), 4, 8);
     } else {
       const size = a.kind === 'boss' ? 44 : 28;
       ctx.fillStyle = 'rgba(0,0,0,.35)';
@@ -205,10 +225,14 @@ function draw() {
         ctx.fillStyle = '#2b323d';
         ctx.fillRect(Math.round(sx - size / 2), Math.round(sy - 6), size, 6);
       } else {
-        drawBlock(
-          sx - size / 2, sy - size - airborne, size, size,
-          a.state === 'hurt' ? '#ffffff' : (ENEMY_COLORS[a.kind] || '#888'),
-        );
+        const drew = drawActorSprite(ctx, SHEETS[a.kind], a, sx, sy, moving);
+        if (drew) state.art.drawnSprites++;
+        if (!drew) {
+          drawBlock(
+            sx - size / 2, sy - size - airborne, size, size,
+            a.state === 'hurt' ? '#ffffff' : (ENEMY_COLORS[a.kind] || '#888'),
+          );
+        }
       }
       if (a.state === 'attack') {
         // 起手预警：头顶红色感叹号

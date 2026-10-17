@@ -58,15 +58,15 @@ def mat(name, rgb, rough=0.72, metal=0.0, spec=0.35):
     return m
 
 
-M_SKIN = mat("skin", (0.94, 0.72, 0.58), rough=0.62, spec=0.30)
-M_HAIR = mat("hair", (0.46, 0.09, 0.12), rough=0.55, spec=0.40)
-M_COAT = mat("coat", (0.11, 0.19, 0.34), rough=0.80, spec=0.25)
-M_COAT_DARK = mat("coat_dark", (0.07, 0.12, 0.23), rough=0.82, spec=0.22)
-M_TRIM = mat("trim", (0.78, 0.60, 0.22), rough=0.38, metal=0.75, spec=0.5)
-M_PANTS = mat("pants", (0.15, 0.14, 0.17), rough=0.85, spec=0.20)
-M_BOOT = mat("boot", (0.24, 0.14, 0.10), rough=0.70, spec=0.30)
-M_LEATHER = mat("leather", (0.31, 0.19, 0.12), rough=0.68, spec=0.30)
-M_METAL = mat("metal", (0.72, 0.76, 0.82), rough=0.30, metal=0.95, spec=0.6)
+M_SKIN = mat("skin", (0.90, 0.70, 0.58), rough=0.62, spec=0.30)
+M_HAIR = mat("hair", (0.60, 0.13, 0.16), rough=0.55, spec=0.40)
+M_COAT = mat("coat", (0.15, 0.27, 0.48), rough=0.80, spec=0.25)
+M_COAT_DARK = mat("coat_dark", (0.09, 0.17, 0.31), rough=0.82, spec=0.22)
+M_TRIM = mat("trim", (0.88, 0.69, 0.26), rough=0.38, metal=0.75, spec=0.5)
+M_PANTS = mat("pants", (0.30, 0.28, 0.34), rough=0.85, spec=0.20)
+M_BOOT = mat("boot", (0.36, 0.22, 0.15), rough=0.70, spec=0.30)
+M_LEATHER = mat("leather", (0.32, 0.20, 0.13), rough=0.68, spec=0.30)
+M_METAL = mat("metal", (0.80, 0.83, 0.88), rough=0.34, metal=0.22, spec=0.65)
 
 
 # ----------------------------------------------------------------------------
@@ -165,87 +165,95 @@ def box_frame(name, centre, u, v, n, hu, hv, hn, material, bone):
 # body (facing +X, Y is the width axis, feet at z=0)
 # ----------------------------------------------------------------------------
 # head + hair ---------------------------------------------------------------
-ico("head", (0.006, 0.0, 1.588), 0.098, (1.02, 0.94, 1.05), M_SKIN, "head", subdiv=2)
-ico("hair_cap", (-0.042, 0.0, 1.598), 0.108, (1.06, 1.03, 0.95), M_HAIR, "head", subdiv=2)
-taper_box("bangs", (0.055, 0.0, 1.622), (0.03, 0.0, 1.672), 0.155, 0.085, 0.115, 0.075, M_HAIR, "head")
-# twin tails: swept back (-X) and out, so the silhouette reads from the side
+# head is 0.23 units tall (~8.5 px in the 56 px sprite), chin at z=1.47
+ico("head", (0.012, 0.0, 1.585), 0.112, (1.0, 0.93, 0.98), M_SKIN, "head", subdiv=2)
+ico("jaw", (0.052, 0.0, 1.516), 0.062, (1.12, 0.92, 0.86), M_SKIN, "head", subdiv=1)
+# hair shell covers the back/top only, leaving the face (+X) exposed
+ico("hair_cap", (-0.070, 0.0, 1.590), 0.118, (1.02, 1.04, 0.93), M_HAIR, "head", subdiv=2)
+# fringe over the forehead, slanting down toward +X
+taper_box("fringe", (0.072, 0.0, 1.590), (0.008, 0.0, 1.690), 0.168, 0.110, 0.225, 0.240,
+          M_HAIR, "head")
+# twin tails: swept back and hanging down behind the shoulders
 for side, tag in ((-1, "R"), (1, "L")):
-    y = 0.092 * side
-    root = (-0.02, y, 1.628)
-    mid = (-0.135, 0.152 * side, 1.548)
-    end = (-0.255, 0.182 * side, 1.415)
-    tube(f"pigtail{tag}_a", root, mid, 0.048, 0.038, 6, M_HAIR, "head")
-    tube(f"pigtail{tag}_b", mid, end, 0.038, 0.013, 6, M_HAIR, "head")
+    root = (-0.052, 0.118 * side, 1.615)
+    mid = (-0.158, 0.165 * side, 1.500)
+    end = (-0.232, 0.180 * side, 1.245)
+    tube(f"pigtail{tag}_a", root, mid, 0.050, 0.036, 6, M_HAIR, "head")
+    tube(f"pigtail{tag}_b", mid, end, 0.036, 0.012, 6, M_HAIR, "head")
     ico(f"hair_tie{tag}", root, 0.036, (0.9, 0.9, 0.9), M_TRIM, "head", subdiv=1)
 
-# neck ----------------------------------------------------------------------
-tube("neck", (-0.004, 0.0, 1.425), (-0.004, 0.0, 1.50), 0.045, 0.042, 6, M_SKIN, "spine")
+# neck + scarf --------------------------------------------------------------
+tube("neck", (-0.004, 0.0, 1.395), (-0.004, 0.0, 1.478), 0.048, 0.044, 6, M_SKIN, "spine")
+taper_box("scarf", (-0.006, 0.0, 1.395), (-0.010, 0.0, 1.462), 0.176, 0.172, 0.150, 0.148,
+          M_HAIR, "spine")
 
 # torso ---------------------------------------------------------------------
-taper_box("pelvis", (0.0, 0.0, 0.86), (0.0, 0.0, 1.018), 0.238, 0.176, 0.222, 0.166, M_COAT, "hips")
-taper_box("waist", (0.0, 0.0, 1.018), (0.0, 0.0, 1.20), 0.216, 0.162, 0.262, 0.184, M_COAT, "spine")
-taper_box("chest", (0.0, 0.0, 1.20), (0.0, 0.0, 1.415), 0.262, 0.184, 0.322, 0.174, M_COAT, "spine")
+taper_box("pelvis", (0.0, 0.0, 0.855), (0.0, 0.0, 1.020), 0.252, 0.190, 0.232, 0.168, M_COAT, "hips")
+taper_box("waist", (0.0, 0.0, 1.020), (0.0, 0.0, 1.185), 0.232, 0.168, 0.212, 0.154, M_COAT, "spine")
+taper_box("chest", (0.0, 0.0, 1.185), (0.0, 0.0, 1.405), 0.212, 0.154, 0.340, 0.192, M_COAT, "spine")
 for side in (-1, 1):
-    ico("bust_%d" % side, (0.074, 0.058 * side, 1.283), 0.050, (1.30, 0.92, 0.74), M_COAT, "spine", subdiv=1)
-    ico("shoulder_%d" % side, (0.0, 0.157 * side, 1.392), 0.056, (1.0, 1.06, 0.86), M_COAT, "spine", subdiv=1)
+    ico("bust_%d" % side, (0.078, 0.060 * side, 1.272), 0.055, (1.28, 0.95, 0.72), M_COAT, "spine", subdiv=1)
+    ico("shoulder_%d" % side, (0.0, 0.186 * side, 1.382), 0.062, (1.05, 1.0, 0.82), M_COAT, "spine", subdiv=1)
 
 # belt + coat tail ----------------------------------------------------------
-taper_box("belt", (0.0, 0.0, 0.996), (0.0, 0.0, 1.058), 0.236, 0.186, 0.236, 0.186, M_LEATHER, "hips")
-box_frame("buckle", (0.094, 0.0, 1.027), Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
-          0.012, 0.030, 0.024, M_TRIM, "hips")
-taper_box("coat_tail", (-0.085, 0.0, 0.965), (-0.145, 0.0, 0.715), 0.268, 0.105, 0.330, 0.075,
+taper_box("belt", (0.0, 0.0, 1.003), (0.0, 0.0, 1.062), 0.244, 0.182, 0.244, 0.182, M_LEATHER, "hips")
+box_frame("buckle", (0.100, 0.0, 1.032), Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+          0.012, 0.032, 0.026, M_TRIM, "hips")
+taper_box("coat_tail", (-0.090, 0.0, 0.955), (-0.155, 0.0, 0.700), 0.272, 0.105, 0.338, 0.072,
           M_COAT_DARK, "hips")
-taper_box("coat_tail_trim", (-0.143, 0.0, 0.723), (-0.152, 0.0, 0.700), 0.326, 0.078, 0.336, 0.070,
+taper_box("coat_tail_trim", (-0.153, 0.0, 0.708), (-0.162, 0.0, 0.686), 0.334, 0.076, 0.344, 0.066,
           M_TRIM, "hips")
 # short side skirts so the hips read as a coat, legs still visible in front
 for side in (-1, 1):
-    taper_box("skirt_%d" % side, (0.0, 0.118 * side, 0.955), (0.0, 0.128 * side, 0.805),
-              0.052, 0.225, 0.058, 0.245, M_COAT_DARK, "hips")
+    taper_box("skirt_%d" % side, (0.0, 0.124 * side, 0.950), (0.0, 0.132 * side, 0.800),
+              0.055, 0.235, 0.060, 0.255, M_COAT_DARK, "hips")
 
 # arms ----------------------------------------------------------------------
 for side, tag, bone in ((-1, "R", "armR"), (1, "L", "armL")):
-    sh = (0.0, 0.168 * side, 1.392)
-    el = (0.008, 0.205 * side, 1.205)
-    wr = (0.020, 0.215 * side, 1.035)
-    tube(f"upperarm{tag}", sh, el, 0.055, 0.043, 6, M_COAT, bone)
-    tube(f"forearm{tag}", el, wr, 0.043, 0.034, 6, M_SKIN, bone)
-    ico(f"hand{tag}", (0.026, 0.216 * side, 0.996), 0.044, (1.10, 0.92, 1.0), M_LEATHER, bone, subdiv=1)
-# right arm: metal bracer + pauldron (sword arm, camera side)
-tube("bracerR", (0.012, -0.207, 1.145), (0.020, -0.215, 1.055), 0.053, 0.046, 6, M_METAL, "armR")
-ico("pauldronR", (0.0, -0.183, 1.418), 0.092, (1.0, 1.16, 0.60), M_METAL, "armR", subdiv=2)
-ico("pauldronR2", (0.0, -0.196, 1.372), 0.070, (1.0, 1.18, 0.52), M_METAL, "armR", subdiv=1)
+    sh = (0.0, 0.198 * side, 1.382)
+    el = (0.010, 0.226 * side, 1.190)
+    wr = (0.026, 0.238 * side, 1.018)
+    tube(f"upperarm{tag}", sh, el, 0.056, 0.045, 6, M_COAT, bone)
+    tube(f"forearm{tag}", el, wr, 0.045, 0.036, 6, M_SKIN, bone)
+    ico(f"hand{tag}", (0.033, 0.240 * side, 0.982), 0.047, (1.10, 0.92, 1.0), M_LEATHER, bone, subdiv=1)
+# right arm: metal bracer + layered pauldron (sword arm, camera side)
+tube("bracerR", (0.016, -0.230, 1.140), (0.026, -0.238, 1.040), 0.054, 0.047, 6, M_METAL, "armR")
+ico("pauldronR", (0.0, -0.222, 1.385), 0.100, (1.0, 1.05, 0.62), M_METAL, "armR", subdiv=2)
+ico("pauldronR2", (0.0, -0.236, 1.332), 0.074, (1.0, 1.10, 0.55), M_METAL, "armR", subdiv=1)
 # left arm: leather cuff
-tube("cuffL", (0.012, 0.207, 1.135), (0.020, 0.215, 1.075), 0.048, 0.043, 6, M_LEATHER, "armL")
+tube("cuffL", (0.016, 0.230, 1.130), (0.026, 0.238, 1.068), 0.049, 0.044, 6, M_LEATHER, "armL")
 
 # legs ----------------------------------------------------------------------
 for side, tag, bone in ((-1, "R", "legR"), (1, "L", "legL")):
-    hip = (0.0, 0.088 * side, 0.905)
-    knee = (0.006, 0.095 * side, 0.478)
-    ankle = (0.014, 0.095 * side, 0.118)
-    tube(f"thigh{tag}", hip, knee, 0.078, 0.055, 6, M_PANTS, bone)
-    tube(f"shin{tag}", knee, ankle, 0.055, 0.040, 6, M_PANTS, bone)
-    taper_box(f"boot{tag}", (0.044, 0.095 * side, 0.0), (0.018, 0.095 * side, 0.132),
-              0.098, 0.205, 0.092, 0.140, M_BOOT, bone)
-    taper_box(f"bootcuff{tag}", (0.014, 0.095 * side, 0.126), (0.012, 0.095 * side, 0.215),
-              0.096, 0.118, 0.108, 0.108, M_BOOT, bone)
+    hip = (0.0, 0.092 * side, 0.900)
+    knee = (0.008, 0.098 * side, 0.475)
+    ankle = (0.016, 0.100 * side, 0.130)
+    tube(f"thigh{tag}", hip, knee, 0.082, 0.058, 6, M_PANTS, bone)
+    ico(f"knee{tag}", knee, 0.058, (1.05, 0.95, 0.90), M_PANTS, bone, subdiv=1)
+    tube(f"shin{tag}", knee, ankle, 0.058, 0.042, 6, M_PANTS, bone)
+    taper_box(f"boot{tag}", (0.050, 0.100 * side, 0.0), (0.020, 0.100 * side, 0.140),
+              0.105, 0.215, 0.098, 0.145, M_BOOT, bone)
+    taper_box(f"bootcuff{tag}", (0.016, 0.100 * side, 0.135), (0.014, 0.100 * side, 0.235),
+              0.100, 0.125, 0.115, 0.112, M_BOOT, bone)
 
 # ----------------------------------------------------------------------------
 # sword  (built in the rest pose, blade pointing down-forward from the hand)
 # ----------------------------------------------------------------------------
-HAND = Vector((0.026, -0.216, 0.996))
+HAND = Vector((0.032, -0.240, 0.982))
 U = Vector((0.820, 0.0, -0.572)).normalized()   # blade axis, rest pose
-V = Vector((0.0, 1.0, 0.0))                     # across the blade
-N = U.cross(V).normalized()                     # blade flat normal
+# broadside faces the camera: blade width lies in the XZ plane, thickness along Y
+V = U.cross(Vector((0.0, 1.0, 0.0))).normalized()
+N = Vector((0.0, 1.0, 0.0))
 
-tube("grip", tuple(HAND - U * 0.115), tuple(HAND + U * 0.012), 0.021, 0.019, 6, M_LEATHER, "weapon")
-ico("pommel", tuple(HAND - U * 0.132), 0.030, (1.0, 1.0, 2.6), M_METAL, "weapon", subdiv=1)
-box_frame("guard", HAND + U * 0.024, U, V, N, 0.016, 0.088, 0.023, M_TRIM, "weapon")
+tube("grip", tuple(HAND - U * 0.120), tuple(HAND + U * 0.012), 0.026, 0.023, 6, M_LEATHER, "weapon")
+ico("pommel", tuple(HAND - U * 0.137), 0.036, (1.0, 1.0, 1.0), M_METAL, "weapon", subdiv=1)
+box_frame("guard", HAND + U * 0.026, U, V, N, 0.020, 0.105, 0.028, M_TRIM, "weapon")
 
 sections = [
-    (0.040, 0.030, 0.0075),
-    (0.330, 0.028, 0.0068),
-    (0.610, 0.022, 0.0052),
-    (0.790, 0.011, 0.0032),
+    (0.046, 0.040, 0.0100),
+    (0.300, 0.036, 0.0090),
+    (0.540, 0.026, 0.0065),
+    (0.700, 0.012, 0.0035),
 ]
 verts = []
 faces = []
@@ -253,7 +261,7 @@ for t, hw, ht in sections:
     c = HAND + U * t
     verts += [tuple(c + V * hw), tuple(c + N * ht), tuple(c - V * hw), tuple(c - N * ht)]
 tip_index = len(verts)
-verts.append(tuple(HAND + U * 0.862))
+verts.append(tuple(HAND + U * 0.762))
 for r in range(len(sections) - 1):
     a = r * 4
     b = (r + 1) * 4
@@ -290,13 +298,13 @@ def bone(name, head, tail, parent=None, connect=False, deform=True):
 
 
 bone("root", (0, 0, 0), (0, 0, 0.18), deform=False)
-bone("hips", (0, 0, 0.905), (0, 0, 1.03), "root")
-bone("spine", (0, 0, 1.03), (0, 0, 1.43), "hips", connect=True)
-bone("head", (0, 0, 1.43), (0, 0, 1.71), "spine", connect=True)
-bone("armR", (0, -0.168, 1.392), (0.020, -0.215, 1.035), "spine")
-bone("armL", (0, 0.168, 1.392), (0.020, 0.215, 1.035), "spine")
-bone("legR", (0, -0.088, 0.905), (0.014, -0.095, 0.118), "hips")
-bone("legL", (0, 0.088, 0.905), (0.014, 0.095, 0.118), "hips")
+bone("hips", (0, 0, 0.900), (0, 0, 1.025), "root")
+bone("spine", (0, 0, 1.025), (0, 0, 1.405), "hips", connect=True)
+bone("head", (0, 0, 1.405), (0, 0, 1.710), "spine", connect=True)
+bone("armR", (0, -0.198, 1.382), (0.026, -0.238, 1.018), "spine")
+bone("armL", (0, 0.198, 1.382), (0.026, 0.238, 1.018), "spine")
+bone("legR", (0, -0.092, 0.900), (0.016, -0.100, 0.130), "hips")
+bone("legL", (0, 0.092, 0.900), (0.016, 0.100, 0.130), "hips")
 bone("weapon", tuple(HAND), tuple(HAND + U * 0.45), "armR")
 bpy.ops.object.mode_set(mode="OBJECT")
 ARM.show_in_front = True
@@ -356,13 +364,13 @@ def apply_pose(pose):
 
 
 BASE = {
-    "spine": {"ry": 3.0},
-    "head": {"ry": -3.0},
-    "armR": {"ry": -8.0, "rx": -7.0},
-    "armL": {"ry": 8.0, "rx": 7.0},
+    "spine": {"ry": 3.0, "rz": -4.0},
+    "head": {"ry": -3.0, "rz": 2.0},
+    "armR": {"ry": -14.0, "rx": -8.0},
+    "armL": {"ry": 12.0, "rx": 8.0},
     "legR": {"ry": 3.0},
     "legL": {"ry": -3.0},
-    "weapon": {"ry": 0.0},
+    "weapon": {"ry": 8.0},
 }
 
 
@@ -455,7 +463,7 @@ def clip_attack3():
              legR={"ry": -6}, legL={"ry": 6}, armR={"ry": -62}, armL={"ry": 30},
              weapon={"ry": -6}),
         pose(hips={"tz": 0.06}, spine={"ry": -14}, head={"ry": 10},
-             legR={"ry": 6}, legL={"ry": -4}, armR={"ry": -132}, armL={"ry": 44},
+             legR={"ry": 6}, legL={"ry": -4}, armR={"ry": -118}, armL={"ry": 44},
              weapon={"ry": 8}),
         pose(hips={"tz": -0.01}, spine={"ry": 2}, head={"ry": -2},
              armR={"ry": -22}, armL={"ry": 24}, weapon={"ry": 6}),
@@ -522,7 +530,7 @@ def clip_special():
              legR={"ry": -10}, legL={"ry": 8}, armR={"ry": 56}, armL={"ry": -48},
              weapon={"ry": 42}),
         pose(hips={"tz": 0.09, "rz": 4}, spine={"ry": -20, "rz": 6}, head={"ry": 12},
-             legR={"ry": 6}, legL={"ry": -6}, armR={"ry": -134}, armL={"ry": 50},
+             legR={"ry": 6}, legL={"ry": -6}, armR={"ry": -120}, armL={"ry": 50},
              weapon={"ry": -22}),
         pose(hips={"tz": -0.10, "rz": 10, "tx": 0.05}, spine={"ry": 34, "rz": 16},
              head={"ry": 14}, legR={"ry": 14}, legL={"ry": -16},
@@ -616,7 +624,7 @@ SCENE.world = world
 world.use_nodes = True
 bg = world.node_tree.nodes.get("Background")
 bg.inputs["Color"].default_value = (0.055, 0.07, 0.105, 1.0)
-bg.inputs["Strength"].default_value = 1.2
+bg.inputs["Strength"].default_value = 1.4
 
 
 def sun(name, from_dir, energy, colour, angle_deg):
@@ -632,9 +640,9 @@ def sun(name, from_dir, energy, colour, angle_deg):
     return ob
 
 
-sun("KeyLight", (-1.0, -1.15, 1.6), 4.2, (1.0, 0.96, 0.90), 8.0)
-sun("FillLight", (1.2, -1.0, 0.55), 1.5, (0.45, 0.62, 1.0), 30.0)
-sun("RimLight", (-1.4, 1.1, 1.3), 2.2, (1.0, 0.78, 0.55), 14.0)
+sun("KeyLight", (-1.0, -1.15, 1.6), 3.2, (1.0, 0.96, 0.90), 8.0)
+sun("FillLight", (1.2, -1.0, 0.55), 1.3, (0.45, 0.62, 1.0), 30.0)
+sun("RimLight", (-1.4, 1.1, 1.3), 1.8, (1.0, 0.78, 0.55), 14.0)
 
 SCENE.render.engine = "BLENDER_EEVEE_NEXT" if "BLENDER_EEVEE_NEXT" in [
     e.identifier for e in bpy.types.RenderSettings.bl_rna.properties["engine"].enum_items
