@@ -309,8 +309,8 @@ function draw() {
       }
     }
 
-    // 血条
-    if (!a.dead) {
+    // 血条（玩家不画，HUD 已经有了；画在头顶只会挡脸）
+    if (!a.dead && kind !== 'player') {
       const w = a.kind === 'boss' ? 52 : 22;
       const bx = Math.round(sx - w / 2);
       const by = Math.round(sy - (kind === 'player' ? HERO_H : (a.kind === 'boss' ? 44 : 28)) - airborne - (kind === 'player' ? 10 : 8));

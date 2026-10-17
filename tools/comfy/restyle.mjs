@@ -82,8 +82,10 @@ async function main() {
 
   for (const f of files) {
     const rel = relative(IN, f);
-    const clip = rel.split(/[\\/]/)[0];
-    if (ONLY && !ONLY.has(clip)) continue;
+    const parts = rel.split(/[\\/]/);
+    const clip = parts[0];
+    // --only 既接受角色目录名，也接受剪辑目录名（enemies/grunt/idle/...）
+    if (ONLY && !ONLY.has(parts[0]) && !ONLY.has(parts[1])) continue;
     const dst = join(OUT, rel);
     if (existsSync(dst)) { skipped++; continue; }
 

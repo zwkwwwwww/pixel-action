@@ -12,10 +12,13 @@ export async function loadSprites(basePath) {
   return { meta, img };
 }
 
-/** 取某剪辑的帧矩形；剪辑缺失时回退到 idle/第一个，避免整局消失。 */
+/** 取某剪辑的帧矩形；剪辑缺失时回退到 attack1/idle/第一个，避免整局消失。 */
 export function pickClip(sheet, clip) {
   const { clips } = sheet.meta;
   if (clips[clip]) return { name: clip, ...clips[clip] };
+  // 敌人只渲染了 attack1：attack2/3 必须仍能做出「挥砍」动作，不能倒退回待机
+  const isAttack = clip.startsWith('attack') || clip === 'special';
+  if (isAttack && clips.attack1) return { name: 'attack1', ...clips.attack1 };
   if (clips.idle) return { name: 'idle', ...clips.idle };
   const first = Object.keys(clips)[0];
   return { name: first, ...clips[first] };

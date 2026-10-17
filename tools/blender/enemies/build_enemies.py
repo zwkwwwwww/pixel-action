@@ -609,14 +609,14 @@ def build_grunt():
     DEATH_F = 0.74
 
     M = {
-        "skin": mat("gr_skin", (0.40, 0.49, 0.23), rough=0.68),
-        "skin_d": mat("gr_skin_d", (0.27, 0.34, 0.15), rough=0.72),
-        "rag": mat("gr_rag", (0.20, 0.30, 0.16), rough=0.88),
-        "rag_d": mat("gr_rag_d", (0.13, 0.20, 0.11), rough=0.90),
-        "leather": mat("gr_leather", (0.29, 0.20, 0.11), rough=0.72),
-        "metal": mat("gr_metal", (0.68, 0.71, 0.75), rough=0.34, metal=0.65, spec=0.6),
-        "eye": mat("gr_eye", (0.98, 0.86, 0.18), rough=0.30),
-        "tooth": mat("gr_tooth", (0.92, 0.90, 0.80), rough=0.45),
+        "skin": mat("gr_skin", (0.47, 0.55, 0.25), rough=0.66),
+        "skin_d": mat("gr_skin_d", (0.29, 0.36, 0.15), rough=0.72),
+        "rag": mat("gr_rag", (0.19, 0.27, 0.15), rough=0.88),
+        "rag_d": mat("gr_rag_d", (0.105, 0.165, 0.095), rough=0.90),
+        "leather": mat("gr_leather", (0.30, 0.20, 0.10), rough=0.72),
+        "metal": mat("gr_metal", (0.70, 0.73, 0.78), rough=0.32, metal=0.65, spec=0.6),
+        "eye": mat("gr_eye", (1.00, 0.86, 0.10), rough=0.28),
+        "tooth": mat("gr_tooth", (0.93, 0.91, 0.82), rough=0.45),
     }
 
     # legs -----------------------------------------------------------------
@@ -643,8 +643,8 @@ def build_grunt():
     taper_box("chest", (0.030, 0.0, 0.655), (0.072, 0.0, 0.800), 0.192, 0.136, 0.295, 0.168,
               M["rag"], "spine")
     # hunched back bundle (reads as the hump from the side)
-    ico("hump", (-0.055, 0.0, 0.795), 0.115, (1.05, 0.88, 0.80), M["rag_d"], "spine", subdiv=2)
-    ico("hump2", (-0.045, 0.0, 0.735), 0.085, (1.0, 0.90, 0.75), M["rag_d"], "spine", subdiv=1)
+    ico("hump", (-0.092, 0.0, 0.800), 0.122, (1.02, 0.86, 0.82), M["rag_d"], "spine", subdiv=2)
+    ico("hump2", (-0.060, 0.0, 0.716), 0.090, (0.95, 0.90, 0.72), M["rag_d"], "spine", subdiv=1)
     # belt + pouch
     taper_box("belt", (0.008, 0.0, 0.545), (0.014, 0.0, 0.585), 0.188, 0.148, 0.186, 0.146,
               M["leather"], "hips")
@@ -673,29 +673,42 @@ def build_grunt():
             (1.0, 1.0, 0.7), M["rag_d"], "spine", subdiv=1)
 
     # head (big, pointed ears, long nose) ----------------------------------
-    ico("head", (0.085, 0.0, 0.912), 0.107, (1.05, 0.95, 0.98), M["skin"], "head", subdiv=2)
-    ico("jaw", (0.128, 0.0, 0.862), 0.058, (1.12, 0.92, 0.85), M["skin"], "head", subdiv=1)
-    tube("nose", (0.168, 0.0, 0.900), (0.228, 0.0, 0.880), 0.030, 0.010, 6,
+    ico("head", (0.080, 0.0, 0.905), 0.114, (1.05, 0.95, 1.00), M["skin"], "head", subdiv=2)
+    ico("jaw", (0.132, 0.0, 0.852), 0.062, (1.12, 0.92, 0.82), M["skin"], "head", subdiv=1)
+    ico("cheek", (0.120, 0.0, 0.905), 0.075, (1.05, 0.95, 0.90), M["skin"], "head", subdiv=1)
+    tube("nose", (0.160, 0.0, 0.898), (0.248, 0.0, 0.872), 0.036, 0.011, 6,
+         M["skin"], "head")
+    tube("nose_tip", (0.238, 0.0, 0.876), (0.262, 0.0, 0.868), 0.014, 0.006, 5,
          M["skin_d"], "head")
     for side, tag in ((-1, "R"), (1, "L")):
-        tube("ear" + tag, (0.045, 0.080 * side, 0.935), (-0.050, 0.170 * side, 0.995),
-             0.040, 0.006, 5, M["skin"], "head")
-        ico("eye" + tag, (0.176, 0.042 * side, 0.938), 0.020, (1.0, 1.0, 1.0),
-            M["eye"], "head", subdiv=1)
-        ico("brow" + tag, (0.168, 0.046 * side, 0.962), 0.032, (1.0, 1.1, 0.45),
-            M["skin_d"], "head", subdiv=1)
-    taper_box("mouth", (0.168, 0.0, 0.845), (0.166, 0.0, 0.858), 0.070, 0.030, 0.060, 0.020,
+        # long pointed ear sweeping back and up
+        tube("ear" + tag, (0.045, 0.082 * side, 0.930), (-0.070, 0.185 * side, 1.005),
+             0.045, 0.005, 5, M["skin"], "head")
+        # dark socket + bright eye (eye must protrude: at 46px it is ~3px)
+        ico("socket" + tag, (0.168, 0.050 * side, 0.948), 0.052, (0.55, 1.05, 0.80),
+            M["skin_d"], "head", subdiv=2)
+        ico("eye" + tag, (0.186, 0.050 * side, 0.950), 0.040, (0.45, 0.95, 0.62),
+            M["eye"], "head", subdiv=2)
+        # heavy brow slab angled down toward the nose
+        prism("brow" + tag, (0.160, 0.052 * side, 0.982), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), Vector((1, 0, 0)),
+              [(-0.048, 0.020), (0.048, 0.030), (0.036, -0.012), (-0.040, -0.010)],
+              0.062, M["skin_d"], "head")
+    taper_box("mouth", (0.180, 0.0, 0.836), (0.176, 0.0, 0.852), 0.078, 0.034, 0.066, 0.022,
               M["skin_d"], "head")
     for side in (-1, 1):
-        taper_box("tooth_%d" % side, (0.176, 0.018 * side, 0.845), (0.178, 0.018 * side, 0.862),
-                  0.016, 0.012, 0.014, 0.010, M["tooth"], "head")
+        ico("tooth_%d" % side, (0.188, 0.022 * side, 0.846), 0.013, (1.0, 1.0, 1.4),
+            M["tooth"], "head", subdiv=1)
 
-    # hood / cowl (dark green, peaks backwards)
-    ico("hood", (-0.005, 0.0, 0.940), 0.115, (1.02, 1.06, 0.98), M["rag_d"], "head", subdiv=2)
-    prism("hood_peak", (-0.020, 0.0, 0.985), Vector((0, 1, 0)), Vector((0, 0, 1)),
+    # hood / cowl (dark green, peaked backwards) --------------------------
+    ico("hood", (-0.020, 0.0, 0.938), 0.118, (1.02, 1.06, 0.99), M["rag_d"], "head", subdiv=2)
+    tube("hood_peak", (-0.030, 0.0, 0.985), (-0.185, 0.0, 1.032), 0.082, 0.008, 6,
+         M["rag_d"], "head")
+    # cowl rim framing the face
+    prism("hood_rim", (0.055, 0.0, 0.965), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
-          [(-0.150, 0.020), (-0.075, 0.010), (-0.010, 0.045), (-0.085, 0.090)],
-          0.185, M["rag_d"], "head")
+          [(-0.100, 0.030), (0.100, 0.030), (0.090, -0.030), (-0.090, -0.030)],
+          0.070, M["rag_d"], "head")
     # ragged collar
     taper_box("collar", (0.008, 0.0, 0.775), (0.020, 0.0, 0.822), 0.190, 0.160, 0.150, 0.130,
               M["rag_d"], "spine")
@@ -769,8 +782,9 @@ def build_brute():
         "skin": mat("br_skin", (0.72, 0.46, 0.32), rough=0.62),
         "skin_d": mat("br_skin_d", (0.55, 0.33, 0.22), rough=0.68),
         "brass": mat("br_brass", (0.82, 0.58, 0.18), rough=0.34, metal=0.7, spec=0.55),
-        "steel": mat("br_steel", (0.62, 0.63, 0.67), rough=0.30, metal=0.7, spec=0.6),
+        "steel": mat("br_steel", (0.66, 0.67, 0.71), rough=0.30, metal=0.7, spec=0.6),
         "horn": mat("br_horn", (0.82, 0.76, 0.62), rough=0.5),
+        "eye": mat("br_eye", (1.00, 0.55, 0.10), rough=0.25),
     }
 
     # legs -----------------------------------------------------------------
@@ -829,25 +843,29 @@ def build_brute():
     # neck + head + horned helmet -----------------------------------------
     tube("neck", (0.010, 0.0, 1.200), (0.010, 0.0, 1.265), 0.080, 0.075, 7, M["skin_d"],
          "spine")
-    ico("head", (0.020, 0.0, 1.330), 0.115, (1.0, 0.92, 1.0), M["skin"], "head", subdiv=2)
-    ico("jaw", (0.075, 0.0, 1.288), 0.070, (1.10, 0.90, 0.85), M["skin_d"], "head", subdiv=1)
-    taper_box("helm", (-0.005, 0.0, 1.310), (0.005, 0.0, 1.455), 0.255, 0.255, 0.210, 0.210,
+    ico("head", (0.020, 0.0, 1.330), 0.120, (1.0, 0.92, 1.0), M["skin"], "head", subdiv=2)
+    ico("jaw", (0.078, 0.0, 1.282), 0.076, (1.08, 0.88, 0.82), M["skin_d"], "head", subdiv=1)
+    taper_box("helm", (-0.005, 0.0, 1.305), (0.005, 0.0, 1.455), 0.262, 0.262, 0.215, 0.215,
               M["iron"], "head")
-    ico("helm_dome", (0.0, 0.0, 1.390), 0.128, (1.0, 1.02, 0.78), M["iron"], "head", subdiv=2)
-    box_frame("nasal", (0.128, 0.0, 1.330), Vector((1, 0, 0)), Vector((0, 1, 0)),
-              Vector((0, 0, 1)), 0.012, 0.022, 0.060, M["brass"], "head")
-    box_frame("helm_brow", (0.120, 0.0, 1.392), Vector((1, 0, 0)), Vector((0, 1, 0)),
-              Vector((0, 0, 1)), 0.016, 0.120, 0.020, M["brass"], "head")
+    ico("helm_dome", (0.0, 0.0, 1.390), 0.130, (1.0, 1.02, 0.78), M["iron"], "head", subdiv=2)
+    # recessed dark visor slot + two hot eyes (the brute's only bright spot)
+    box_frame("visor", (0.128, 0.0, 1.336), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.016, 0.105, 0.030, M["iron_d"], "head")
     for side in (-1, 1):
-        ico("eye_%d" % side, (0.112, 0.045 * side, 1.345), 0.022, (1.0, 1.0, 1.0),
-            M["skin_d"], "head", subdiv=1)
-        # horns sweep up and back from the helmet sides
-        tube("horn_a_%d" % side, (0.0, 0.105 * side, 1.395), (-0.030, 0.170 * side, 1.475),
-             0.048, 0.030, 6, M["horn"], "head")
-        tube("horn_b_%d" % side, (-0.030, 0.170 * side, 1.475), (-0.070, 0.200 * side, 1.535),
-             0.030, 0.006, 6, M["horn"], "head")
+        ico("eye_%d" % side, (0.146, 0.048 * side, 1.338), 0.026, (0.55, 1.0, 0.80),
+            M["eye"], "head", subdiv=1)
+    box_frame("nasal", (0.140, 0.0, 1.318), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.014, 0.024, 0.052, M["brass"], "head")
+    box_frame("helm_brow", (0.128, 0.0, 1.374), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.020, 0.130, 0.022, M["brass"], "head")
+    for side in (-1, 1):
+        # horns sweep up and back from the helmet sides (silhouette)
+        tube("horn_a_%d" % side, (0.0, 0.110 * side, 1.388), (-0.055, 0.200 * side, 1.470),
+             0.058, 0.038, 6, M["horn"], "head")
+        tube("horn_b_%d" % side, (-0.055, 0.200 * side, 1.470), (-0.130, 0.240 * side, 1.532),
+             0.038, 0.008, 6, M["horn"], "head")
     # stubby topknot of hair between the horns
-    ico("topknot", (-0.030, 0.0, 1.480), 0.070, (1.0, 1.0, 0.55), M["leather"], "head", subdiv=1)
+    ico("topknot", (-0.050, 0.0, 1.462), 0.078, (1.0, 1.0, 0.58), M["leather"], "head", subdiv=1)
 
     # arms -----------------------------------------------------------------
     for side, tag, bone in ((-1, "R", "armR"), (1, "L", "armL")):
@@ -864,35 +882,35 @@ def build_brute():
 
     # axe ------------------------------------------------------------------
     hand = Vector((0.128, -0.348, 0.752))
-    U = Vector((0.70, 0.0, -0.714)).normalized()
+    U = Vector((0.86, 0.0, -0.51)).normalized()
     u, v, n = basis(U, (0, 1, 0))
-    haft = 0.80
-    tube("haft", tuple(hand - U * 0.20), tuple(hand + U * haft), 0.032, 0.028, 7,
+    AXE = hand + U * 0.64                      # axe head centre, kept above z=0
+    tube("haft", tuple(hand - U * 0.26), tuple(hand + U * 0.80), 0.034, 0.030, 7,
          M["leather"], "weapon")
-    ico("haft_pommel", tuple(hand - U * 0.215), 0.045, (1, 1, 1), M["iron"], "weapon", subdiv=1)
-    for gr in (0.03, 0.10, 0.17):
+    ico("haft_pommel", tuple(hand - U * 0.275), 0.050, (1, 1, 1), M["iron"], "weapon", subdiv=1)
+    for gr in (0.02, 0.10, 0.18):
         tube("haft_wrap_%d" % int(gr * 100), tuple(hand + U * gr),
-             tuple(hand + U * (gr + 0.025)), 0.036, 0.036, 7, M["brass"], "weapon")
+             tuple(hand + U * (gr + 0.030)), 0.038, 0.038, 7, M["brass"], "weapon")
     # collar where the head meets the haft
-    box_frame("axe_collar", hand + U * (haft - 0.10), u, v, n, 0.040, 0.055, 0.050,
-              M["iron"], "weapon")
-    # crescent blade: broadside to camera, edge sweeping +v (down/back)
+    box_frame("axe_collar", tuple(AXE), u, v, n, 0.055, 0.070, 0.062, M["iron"], "weapon")
+    # crescent blade: broadside to camera, cutting edge sweeps +v (down/back)
     blade_poly = [
-        (-0.030, 0.055), (0.060, 0.115), (0.150, 0.230), (0.230, 0.330),
-        (0.330, 0.345), (0.395, 0.300), (0.420, 0.190), (0.400, 0.070),
-        (0.330, -0.010), (0.190, -0.030), (0.060, -0.010),
+        (-0.140, 0.085), (-0.050, 0.030), (0.060, 0.020), (0.180, 0.040),
+        (0.245, 0.130), (0.255, 0.240), (0.180, 0.330), (0.050, 0.360),
+        (-0.070, 0.318), (-0.150, 0.205),
     ]
-    prism("axe_blade", tuple(hand + U * (haft - 0.10)), u, v, n, blade_poly, 0.030,
-          M["steel"], "weapon")
-    # bevel highlight along the cutting edge
-    bevel_poly = [(0.335, 0.330), (0.392, 0.290), (0.416, 0.185), (0.396, 0.075),
-                  (0.360, 0.060), (0.372, 0.180), (0.352, 0.285)]
-    prism("axe_bevel", tuple(hand + U * (haft - 0.10)), u, v, n, bevel_poly, 0.034,
-          M["iron"], "weapon")
-    # back spike
-    prism("axe_spike", tuple(hand + U * (haft - 0.10)), u, v, n,
-          [(0.030, -0.030), (0.120, -0.120), (0.060, -0.150), (0.010, -0.070)],
-          0.024, M["iron"], "weapon")
+    prism("axe_blade", tuple(AXE), u, v, n, blade_poly, 0.038, M["steel"], "weapon")
+    # bright cutting-edge bevel (thin band along the crescent's outer rim)
+    bevel_poly = [
+        (0.245, 0.130), (0.255, 0.240), (0.180, 0.330), (0.050, 0.360),
+        (-0.070, 0.318), (-0.040, 0.300), (0.055, 0.336), (0.165, 0.306),
+        (0.222, 0.225), (0.212, 0.135),
+    ]
+    prism("axe_bevel", tuple(AXE), u, v, n, bevel_poly, 0.042, M["iron_l"], "weapon")
+    # back spike opposite the blade
+    prism("axe_spike", tuple(AXE), u, v, n,
+          [(-0.030, -0.030), (-0.180, -0.090), (-0.280, -0.040), (-0.150, 0.005)],
+          0.030, M["iron"], "weapon")
 
     BASE = {
         "spine": {"ry": 2.0, "rz": -2.0},
@@ -919,7 +937,7 @@ def build_brute():
          "parent": "hips"},
         {"name": "legL", "head": (0, 0.115, 0.740), "tail": (0.055, 0.130, 0.140),
          "parent": "hips"},
-        {"name": "weapon", "head": tuple(hand), "tail": tuple(hand + U * 0.55), "parent": "armR"},
+        {"name": "weapon", "head": tuple(hand), "tail": tuple(hand + U * 0.70), "parent": "armR"},
     ]
     cfg = {
         "kind": "brute", "height": height, "render_px": 384, "cell": 96,
@@ -1007,42 +1025,44 @@ def build_ranger():
              0.046, 0.042, 6, M["accent"], bone)
 
     # head + hood ----------------------------------------------------------
-    ico("head", (0.030, 0.0, 1.100), 0.092, (1.0, 0.92, 1.02), M["skin"], "head", subdiv=2)
-    ico("jaw", (0.070, 0.0, 1.062), 0.058, (1.05, 0.88, 0.82), M["skin"], "head", subdiv=1)
-    # shadowed eye band
-    prism("eye_band", (0.088, 0.0, 1.116), Vector((0, 1, 0)), Vector((0, 0, 1)),
+    ico("head", (0.045, 0.0, 1.095), 0.090, (1.0, 0.92, 1.02), M["skin"], "head", subdiv=2)
+    ico("jaw", (0.082, 0.0, 1.056), 0.058, (1.05, 0.88, 0.82), M["skin"], "head", subdiv=1)
+    # shadowed eye band + two cold eyes
+    prism("eye_band", (0.108, 0.0, 1.112), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
-          [(-0.085, 0.018), (0.085, 0.018), (0.078, -0.016), (-0.078, -0.016)],
-          0.030, M["cloak_d"], "head")
+          [(-0.078, 0.020), (0.078, 0.020), (0.072, -0.018), (-0.072, -0.018)],
+          0.036, M["cloak_d"], "head")
     for side in (-1, 1):
-        ico("eye_%d" % side, (0.103, 0.036 * side, 1.108), 0.014, (1.0, 1.0, 1.0),
+        ico("eye_%d" % side, (0.122, 0.038 * side, 1.108), 0.022, (0.55, 0.95, 0.70),
             M["accent"], "head", subdiv=1)
-    ico("hood", (-0.010, 0.0, 1.108), 0.118, (1.02, 1.05, 1.00), M["cloak"], "head", subdiv=2)
-    # hood peak swept back
-    prism("hood_peak", (-0.045, 0.0, 1.150), Vector((0, 1, 0)), Vector((0, 0, 1)),
+    ico("hood", (-0.012, 0.0, 1.106), 0.118, (1.02, 1.05, 1.00), M["cloak"], "head", subdiv=2)
+    # hood peak swept back (cone, not a slab: it has to read in silhouette)
+    tube("hood_peak", (-0.030, 0.0, 1.160), (-0.180, 0.0, 1.228), 0.076, 0.008, 6,
+         M["cloak"], "head")
+    # hood rim framing the face
+    prism("hood_rim", (0.070, 0.0, 1.132), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
-          [(-0.115, 0.010), (-0.030, -0.020), (-0.005, 0.055), (-0.075, 0.085)],
-          0.165, M["cloak"], "head")
-    # hood rim across the brow
-    prism("hood_rim", (0.060, 0.0, 1.150), Vector((0, 1, 0)), Vector((0, 0, 1)),
+          [(-0.102, 0.028), (0.102, 0.028), (0.092, -0.030), (-0.092, -0.030)],
+          0.062, M["cloak_d"], "head")
+    # chin strap
+    prism("chinstrap", (0.090, 0.0, 1.040), Vector((0, 1, 0)), Vector((0, 0, 1)),
           Vector((1, 0, 0)),
-          [(-0.105, 0.010), (0.105, 0.010), (0.095, -0.030), (-0.095, -0.030)],
-          0.055, M["cloak_d"], "head")
-    ico("hood_tip", (-0.150, 0.0, 1.190), 0.052, (1.3, 0.7, 0.7), M["cloak"], "head", subdiv=1)
+          [(-0.052, 0.010), (0.052, 0.010), (0.046, -0.014), (-0.046, -0.014)],
+          0.030, M["leather"], "head")
 
-    # quiver + arrows on the back -----------------------------------------
-    q0 = Vector((-0.135, 0.105, 0.760))
-    q1 = Vector((-0.075, 0.135, 1.010))
+    # quiver + arrows on the near shoulder --------------------------------
+    q0 = Vector((-0.130, -0.115, 0.760))
+    q1 = Vector((-0.070, -0.150, 1.010))
     tube("quiver", tuple(q0), tuple(q1), 0.058, 0.052, 7, M["leather"], "spine")
     tube("quiver_rim", tuple(q1 - (q1 - q0).normalized() * 0.03), tuple(q1),
-         0.060, 0.058, 7, M["metal"], "spine")
-    for i, (dy, dz) in enumerate(((-0.020, 0.0), (0.020, 0.005), (0.0, 0.02))):
-        a0 = Vector((-0.080 + dy, 0.130 + dz, 0.980))
-        a1 = Vector((-0.040 + dy * 1.6, 0.150 + dz, 1.180))
-        tube("arrow%d" % i, tuple(a0), tuple(a1), 0.008, 0.008, 4, M["wood"], "spine")
+         0.061, 0.059, 7, M["metal"], "spine")
+    for i, (dy, dz) in enumerate(((-0.022, 0.0), (0.022, 0.004), (0.0, 0.022))):
+        a0 = Vector((-0.074 + dy, -0.146 + dz, 0.980))
+        a1 = Vector((-0.026 + dy * 1.7, -0.166 + dz, 1.196))
+        tube("arrow%d" % i, tuple(a0), tuple(a1), 0.009, 0.009, 4, M["wood"], "spine")
         prism("fletch%d" % i, tuple(a1), Vector((0, 0, 1)), Vector((1, 0, 0)),
               Vector((0, 1, 0)),
-              [(0.0, -0.012), (0.055, 0.0), (0.0, 0.012)], 0.010, M["feather"], "spine")
+              [(0.0, -0.016), (0.072, 0.0), (0.0, 0.016)], 0.012, M["feather"], "spine")
 
     # longbow in the near hand --------------------------------------------
     hand = Vector((0.105, -0.206, 0.638))
