@@ -1,0 +1,121 @@
+{
+  "dir": "tmp\\final-hero",
+  "threshold": 0.22,
+  "clips": {
+    "attack1": {
+      "frames": 4,
+      "max": 0.0411,
+      "mean": 0.0333,
+      "perPair": [
+        0.0411,
+        0.0249,
+        0.0339
+      ],
+      "loopDiff": 0.0366,
+      "pass": true
+    },
+    "attack2": {
+      "frames": 4,
+      "max": 0.0464,
+      "mean": 0.0355,
+      "perPair": [
+        0.0258,
+        0.0464,
+        0.0343
+      ],
+      "loopDiff": 0.0417,
+      "pass": true
+    },
+    "attack3": {
+      "frames": 5,
+      "max": 0.046,
+      "mean": 0.043,
+      "perPair": [
+        0.0393,
+        0.046,
+        0.0436,
+        0.0432
+      ],
+      "loopDiff": 0.0412,
+      "pass": true
+    },
+    "death": {
+      "frames": 6,
+      "max": 0.0402,
+      "mean": 0.0297,
+      "perPair": [
+        0.025,
+        0.0402,
+        0.0391,
+        0.0291,
+        0.0153
+      ],
+      "loopDiff": 0.0393,
+      "pass": true
+    },
+    "dodge": {
+      "frames": 4,
+      "max": 0.041,
+      "mean": 0.0358,
+      "perPair": [
+        0.041,
+        0.0258,
+        0.0406
+      ],
+      "loopDiff": 0.0115,
+      "pass": true
+    },
+    "hurt": {
+      "frames": 2,
+      "max": 0.0301,
+      "mean": 0.0301,
+      "perPair": [
+        0.0301
+      ],
+      "loopDiff": 0.0301,
+      "pass": true
+    },
+    "idle": {
+      "frames": 4,
+      "max": 0.0072,
+      "mean": 0.0058,
+      "perPair": [
+        0.0052,
+        0.0049,
+        0.0072
+      ],
+      "loopDiff": 0.0056,
+      "pass": true
+    },
+    "special": {
+      "frames": 6,
+      "max": 0.0375,
+      "mean": 0.0341,
+      "perPair": [
+        0.0375,
+        0.0358,
+        0.0364,
+        0.0311,
+        0.0301
+      ],
+      "loopDiff": 0.0302,
+      "pass": true
+    },
+    "walk": {
+      "frames": 6,
+      "max": 0.031,
+      "mean": 0.0275,
+      "perPair": [
+        0.031,
+        0.0234,
+        0.0294,
+        0.0295,
+        0.0243
+      ],
+      "loopDiff": 0.031,
+      "pass": true
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

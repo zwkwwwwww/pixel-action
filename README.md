@@ -34,6 +34,20 @@ node --test "tests/**/*.test.mjs"        # 72 条纯逻辑单测（含无作弊�
 
 浏览器取证（CDP，真实键鼠事件 + 截图）见 `tools/browser-probe.mjs` 与 `tools/probes/`。
 
+实测数据（本机 RTX 5060 Laptop 8GB）：
+
+| 项 | 结果 |
+| --- | --- |
+| 单测 | 72 pass / 0 fail |
+| 素材加载 | `loaded:5 / failed:0`，console error 0 |
+| 清第 1 波（真实按键） | `segmentIndex:1`，2 杀，hp 112 |
+| Boss | 出场 hp 420、体型 20；18 次攻击造成 136 伤害；击杀后 `won:true` |
+| 音频 | `ctxState:running`、8/8 解码、BGM + 4 类音效实际播出 |
+| 性能 | 常规 60fps（逻辑 0.04ms / 绘制 0.37ms）；240 粒子 + 300 飘字仍 60.4fps（绘制 0.62ms） |
+| 帧间一致性 | 所有剪辑最大像素差 0.057（阈值 0.22） |
+
+证据截图在 `art-source/evidence/`：`title.png`、`shot-combat.png`、`e2e-boss.png`、`e2e-win.png`、`contact-sheet.png`。
+
 ## 美术管线（一条命令）
 
 ```bash

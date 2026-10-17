@@ -1,0 +1,70 @@
+{
+  "dir": "tmp\\final-enemies\\grunt",
+  "threshold": 0.22,
+  "clips": {
+    "attack1": {
+      "frames": 4,
+      "max": 0.0261,
+      "mean": 0.0213,
+      "perPair": [
+        0.0261,
+        0.0153,
+        0.0226
+      ],
+      "loopDiff": 0.0142,
+      "pass": true
+    },
+    "death": {
+      "frames": 6,
+      "max": 0.0232,
+      "mean": 0.0183,
+      "perPair": [
+        0.0162,
+        0.021,
+        0.02,
+        0.0232,
+        0.0112
+      ],
+      "loopDiff": 0.0302,
+      "pass": true
+    },
+    "hurt": {
+      "frames": 2,
+      "max": 0.0164,
+      "mean": 0.0164,
+      "perPair": [
+        0.0164
+      ],
+      "loopDiff": 0.0164,
+      "pass": true
+    },
+    "idle": {
+      "frames": 4,
+      "max": 0.0051,
+      "mean": 0.0037,
+      "perPair": [
+        0.0035,
+        0.0024,
+        0.0051
+      ],
+      "loopDiff": 0.0035,
+      "pass": true
+    },
+    "walk": {
+      "frames": 6,
+      "max": 0.0179,
+      "mean": 0.0156,
+      "perPair": [
+        0.0171,
+        0.0126,
+        0.0179,
+        0.0172,
+        0.0133
+      ],
+      "loopDiff": 0.0165,
+      "pass": true
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

@@ -35,6 +35,13 @@ art-source/blender/*
 !art-source/blender/enemies/
 art-source/blender/enemies/*
 !art-source/blender/enemies/*.blend
+# 验收证据（截图 / 审计报告）要入库，方便人类直接查看
+!art-source/evidence/
+art-source/evidence/*
+!art-source/evidence/*.png
+!art-source/reports/
+art-source/reports/*
+!art-source/reports/*.json
 tmp/
 *.pyc
 __pycache__/
