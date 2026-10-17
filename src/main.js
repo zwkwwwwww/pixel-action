@@ -370,11 +370,16 @@ function draw() {
       ctx.fillStyle = 'rgba(0,0,0,.35)';
       ctx.fillRect(Math.round(sx - size / 2), Math.round(sy - 3), size, 4);
       if (a.dead) {
-        // 尸体：压扁变暗，明确「已阵亡」，不再像站着
-        ctx.fillStyle = '#0a0d12';
-        ctx.fillRect(Math.round(sx - size / 2) - 1, Math.round(sy - 7), size + 2, 8);
-        ctx.fillStyle = '#2b323d';
-        ctx.fillRect(Math.round(sx - size / 2), Math.round(sy - 6), size, 6);
+        // 先播死亡动画，播完再压成尸体条，避免「一死就瞬间变灰条」
+        const drewDeath = a.stateFrame < 60 && drawActorSprite(ctx, SHEETS[a.kind], a, sx, sy, false);
+        if (drewDeath) {
+          state.art.drawnSprites++;
+        } else {
+          ctx.fillStyle = '#0a0d12';
+          ctx.fillRect(Math.round(sx - size / 2) - 1, Math.round(sy - 7), size + 2, 8);
+          ctx.fillStyle = '#2b323d';
+          ctx.fillRect(Math.round(sx - size / 2), Math.round(sy - 6), size, 6);
+        }
       } else {
         const drew = drawActorSprite(ctx, SHEETS[a.kind], a, sx, sy, moving);
         if (drew) state.art.drawnSprites++;
@@ -479,13 +484,25 @@ function frame(now) {
   const dt = Math.min(250, now - last);
   last = now;
   acc += dt;
+  const tl0 = performance.now();
   let guard = 0;
   while (acc >= STEP_MS && guard++ < 5) {
     acc -= STEP_MS;
     if (state.mode === 'play') logicStep();
     else state.frame++;
   }
+  const tl1 = performance.now();
   draw();
+  const tl2 = performance.now();
+
+  const pf = state.perf || (state.perf = { logic: 0, draw: 0, frames: 0, logicMax: 0, drawMax: 0 });
+  pf.logic += tl1 - tl0;
+  pf.draw += tl2 - tl1;
+  pf.logicMax = Math.max(pf.logicMax, tl1 - tl0);
+  pf.drawMax = Math.max(pf.drawMax, tl2 - tl1);
+  pf.frames++;
+  if (pf.frames > 100000) { pf.logic = pf.draw = pf.logicMax = pf.drawMax = 0; pf.frames = 0; }
+
   requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);

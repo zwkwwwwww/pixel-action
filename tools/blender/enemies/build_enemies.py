@@ -621,19 +621,19 @@ def build_grunt():
 
     # legs -----------------------------------------------------------------
     for side, tag in ((-1, "R"), (1, "L")):
-        hip = (0.0, 0.065 * side, 0.46)
-        knee = (0.02, 0.070 * side, 0.27)
-        ankle = (0.035, 0.072 * side, 0.10)
-        tube("thigh" + tag, hip, knee, 0.052, 0.040, 6, M["skin_d"], "leg" + tag)
-        ico("knee" + tag, knee, 0.040, (1.0, 0.95, 0.9), M["skin_d"], "leg" + tag, subdiv=1)
-        tube("shin" + tag, knee, ankle, 0.040, 0.030, 6, M["skin_d"], "leg" + tag)
-        taper_box("boot" + tag, (0.055, 0.072 * side, 0.0), (0.032, 0.072 * side, 0.125),
-                  0.086, 0.170, 0.080, 0.108, M["leather"], "leg" + tag)
-        taper_box("bootcuff" + tag, (0.030, 0.072 * side, 0.115), (0.028, 0.072 * side, 0.18),
-                  0.078, 0.100, 0.088, 0.094, M["rag"], "leg" + tag)
+        hip = (0.0, 0.072 * side, 0.46)
+        knee = (0.02, 0.078 * side, 0.27)
+        ankle = (0.035, 0.080 * side, 0.10)
+        tube("thigh" + tag, hip, knee, 0.052, 0.040, 6, M["rag_d"], "leg" + tag)
+        ico("knee" + tag, knee, 0.040, (1.0, 0.95, 0.9), M["rag_d"], "leg" + tag, subdiv=1)
+        tube("shin" + tag, knee, ankle, 0.040, 0.030, 6, M["rag_d"], "leg" + tag)
+        taper_box("boot" + tag, (0.058, 0.080 * side, 0.0), (0.034, 0.080 * side, 0.128),
+                  0.090, 0.176, 0.082, 0.110, M["leather"], "leg" + tag)
+        taper_box("bootcuff" + tag, (0.032, 0.079 * side, 0.118), (0.030, 0.079 * side, 0.185),
+                  0.080, 0.102, 0.090, 0.096, M["leather"], "leg" + tag)
         # ragged wrap over the shin
-        tube("wrap" + tag, (0.030, 0.070 * side, 0.20), (0.034, 0.071 * side, 0.25),
-             0.044, 0.044, 6, M["rag"], "leg" + tag)
+        tube("wrap" + tag, (0.030, 0.077 * side, 0.20), (0.034, 0.078 * side, 0.25),
+             0.045, 0.045, 6, M["rag"], "leg" + tag)
 
     # torso (hunched forward: every segment shifts +X going up) -------------
     taper_box("pelvis", (0.0, 0.0, 0.455), (0.008, 0.0, 0.555), 0.190, 0.150, 0.180, 0.140,
@@ -675,7 +675,6 @@ def build_grunt():
     # head (big, pointed ears, long nose) ----------------------------------
     ico("head", (0.080, 0.0, 0.905), 0.114, (1.05, 0.95, 1.00), M["skin"], "head", subdiv=2)
     ico("jaw", (0.132, 0.0, 0.852), 0.062, (1.12, 0.92, 0.82), M["skin"], "head", subdiv=1)
-    ico("cheek", (0.120, 0.0, 0.905), 0.075, (1.05, 0.95, 0.90), M["skin"], "head", subdiv=1)
     tube("nose", (0.160, 0.0, 0.898), (0.248, 0.0, 0.872), 0.036, 0.011, 6,
          M["skin"], "head")
     tube("nose_tip", (0.238, 0.0, 0.876), (0.262, 0.0, 0.868), 0.014, 0.006, 5,
@@ -702,7 +701,7 @@ def build_grunt():
 
     # hood / cowl (dark green, peaked backwards) --------------------------
     ico("hood", (-0.020, 0.0, 0.938), 0.118, (1.02, 1.06, 0.99), M["rag_d"], "head", subdiv=2)
-    tube("hood_peak", (-0.030, 0.0, 0.985), (-0.185, 0.0, 1.032), 0.082, 0.008, 6,
+    tube("hood_peak", (-0.030, 0.0, 0.990), (-0.205, 0.0, 0.960), 0.086, 0.008, 6,
          M["rag_d"], "head")
     # cowl rim framing the face
     prism("hood_rim", (0.055, 0.0, 0.965), Vector((0, 1, 0)), Vector((0, 0, 1)),
@@ -751,9 +750,9 @@ def build_grunt():
          "parent": "spine"},
         {"name": "armL", "head": (0.020, 0.163, 0.775), "tail": (0.150, 0.217, 0.442),
          "parent": "spine"},
-        {"name": "legR", "head": (0, -0.065, 0.455), "tail": (0.035, -0.072, 0.100),
+        {"name": "legR", "head": (0, -0.072, 0.455), "tail": (0.035, -0.080, 0.100),
          "parent": "hips"},
-        {"name": "legL", "head": (0, 0.065, 0.455), "tail": (0.035, 0.072, 0.100),
+        {"name": "legL", "head": (0, 0.072, 0.455), "tail": (0.035, 0.080, 0.100),
          "parent": "hips"},
         {"name": "weapon", "head": tuple(hand), "tail": tuple(hand + U * weapon_len),
          "parent": "armR"},
@@ -958,8 +957,8 @@ def build_ranger():
     DEATH_F = 0.66
 
     M = {
-        "cloak": mat("ra_cloak", (0.17, 0.12, 0.25), rough=0.85, spec=0.2),
-        "cloak_d": mat("ra_cloak_d", (0.10, 0.07, 0.16), rough=0.88, spec=0.18),
+        "cloak": mat("ra_cloak", (0.215, 0.160, 0.315), rough=0.85, spec=0.2),
+        "cloak_d": mat("ra_cloak_d", (0.115, 0.080, 0.175), rough=0.88, spec=0.18),
         "leather": mat("ra_leather", (0.22, 0.16, 0.14), rough=0.72),
         "leather_d": mat("ra_leather_d", (0.14, 0.10, 0.10), rough=0.76),
         "skin": mat("ra_skin", (0.80, 0.66, 0.58), rough=0.60),
@@ -1078,17 +1077,17 @@ def build_ranger():
         t = -1.0 + 2.0 * i / (steps - 1)
         s = t * half
         a = 0.016 + 0.120 * (t * t)          # tips bend forward
-        w = 0.030 * (1.0 - 0.62 * t * t)     # limb thickness profile
+        w = 0.044 * (1.0 - 0.58 * t * t)     # limb thickness profile
         outer.append((s, a))
         inner.append((s, a - w))
-    prism("bow", tuple(hand), u, v, n, outer + inner[::-1], 0.026, M["wood"], "weapon")
+    prism("bow", tuple(hand), u, v, n, outer + inner[::-1], 0.034, M["wood"], "weapon")
     # riser / grip wrap
     prism("bow_grip", tuple(hand), u, v, n,
           [(-0.055, 0.020), (0.055, 0.020), (0.055, -0.030), (-0.055, -0.030)],
           0.036, M["leather"], "weapon")
     tip_a = hand + u * half + v * 0.136
     tip_b = hand - u * half + v * 0.136
-    tube("bowstring", tuple(tip_a), tuple(tip_b), 0.006, 0.006, 4, M["string"], "weapon")
+    tube("bowstring", tuple(tip_a), tuple(tip_b), 0.009, 0.009, 4, M["string"], "weapon")
 
     BASE = {
         "spine": {"ry": 3.0, "rz": -3.0},
@@ -1144,7 +1143,7 @@ def build_boss():
         "leather": mat("bo_leather", (0.150, 0.115, 0.110), rough=0.72),
         "rust": mat("bo_rust", (0.470, 0.255, 0.115), rough=0.66, metal=0.25),
     }
-    M["eye"] = emissive("bo_eye", (1.0, 0.22, 0.10), 14.0)
+    M["eye"] = emissive("bo_eye", (1.0, 0.26, 0.09), 24.0)
 
     # legs -----------------------------------------------------------------
     for side, tag in ((-1, "R"), (1, "L")):
@@ -1217,10 +1216,9 @@ def build_boss():
     # recessed dark visor + a single glowing slit (the boss's tell)
     box_frame("visor", (0.176, 0.0, 2.165), Vector((1, 0, 0)), Vector((0, 1, 0)),
               Vector((0, 0, 1)), 0.020, 0.120, 0.045, M["iron_d"], "head")
-    box_frame("eye_slit", (0.206, 0.0, 2.168), Vector((1, 0, 0)), Vector((0, 1, 0)),
-              Vector((0, 0, 1)), 0.012, 0.086, 0.017, M["eye"], "head")
-    box_frame("eye_slit_core", (0.212, 0.0, 2.168), Vector((1, 0, 0)), Vector((0, 1, 0)),
-              Vector((0, 0, 1)), 0.006, 0.058, 0.009, M["eye"], "head")
+    for side in (-1, 1):
+        box_frame("eye_%d" % side, (0.204, 0.052 * side, 2.168), Vector((1, 0, 0)),
+                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.020, 0.040, 0.027, M["eye"], "head")
     for side in (-1, 1):
         # cheek vents flanking the eye slit
         prism("vent_%d" % side, (0.196, 0.092 * side, 2.115), Vector((0, 1, 0)),
