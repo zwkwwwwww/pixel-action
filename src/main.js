@@ -217,8 +217,8 @@ function drawBlock(x, y, w, h, color, outline = '#0a0d12') {
 const ENEMY_COLORS = { grunt: '#5ec27a', brute: '#d08a3e', ranger: '#9b7bd8', boss: '#d2483f' };
 // 血条要挂在「精灵头顶」，用契约里的可见高度而不是方块尺寸
 const SPRITE_H = { hero: 56, grunt: 46, brute: 52, ranger: 48, boss: 112 };
-// 关掉小怪头顶那根悬空红线；想恢复改成 true
-const SHOW_ENEMY_HP = false;
+// 小怪/精英头顶血条：保持显示（上一轮曾误判成「那根红线」而关闭，已恢复；想隐藏改成 false）
+const SHOW_ENEMY_HP = true;
 
 /** 确定性哈希：地面砖块的明暗不能用 Math.random（会每帧闪烁）。 */
 function hash2(a, b) {
