@@ -1,19 +1,33 @@
-// 关卡：波次触发、闸门、Boss 出场与通关判定。纯逻辑。
+// 关卡：波次触发、屏幕边界锁、Boss 出场与通关判定。纯逻辑。
+//
+// 「闸门」不再是一根画在世界坐标上的竖线，而是「触发波次时把镜头锁在一个由触发点推导出来的机位，
+// 玩家被夹在屏幕右缘内」。这样关卡边界永远等于屏幕右缘，不需要任何额外绘制，也不会挡住画面。
+//
+// 为什么锁定机位由 triggerX 推导、而不是取触发瞬间的相机位置：
+// 相机是阻尼跟随的，玩家冲刺或瞬移时会落后很远；若跟着相机锁，边界会被锁到玩家身后，
+// 形成「够不到敌人 / 被卡在触发点前面」的死局（实测 Boss 战 41px 差距就打不到）。
 import { createActor } from './actor.js';
 import { AI_PROFILES } from './ai.js';
 
+export const VIEW_W = 480;        // 与渲染层一致
+export const GATE_MARGIN = 12;    // 玩家距屏幕右边缘的余量
+export const LOCK_LEAD = 216;     // 锁定机位 = 触发点 - 0.45 屏（与跟随公式一致）
+
 export const LEVEL = {
   worldW: 3200,
+  viewW: VIEW_W,
+  gateMargin: GATE_MARGIN,
+  lockLead: LOCK_LEAD,
   segments: [
     {
-      triggerX: 240, gateX: 400,
+      triggerX: 240,
       spawns: [
         { kind: 'grunt', x: 356, y: 64 },
         { kind: 'grunt', x: 392, y: 24 },
       ],
     },
     {
-      triggerX: 780, gateX: 980,
+      triggerX: 780,
       spawns: [
         { kind: 'grunt', x: 900, y: 62 },
         { kind: 'brute', x: 944, y: 30 },
@@ -21,7 +35,7 @@ export const LEVEL = {
       ],
     },
     {
-      triggerX: 1320, gateX: 1540,
+      triggerX: 1320,
       spawns: [
         { kind: 'ranger', x: 1452, y: 70 },
         { kind: 'grunt', x: 1484, y: 44 },
@@ -30,9 +44,9 @@ export const LEVEL = {
     },
   ],
   boss: {
-    triggerX: 2000, gateX: 2520,
+    triggerX: 2000,
     spawn: {
-      kind: 'boss', x: 2400, y: 41, hp: 420, maxHp: 420,
+      kind: 'boss', x: 2170, y: 41, hp: 420, maxHp: 420,
       speedX: 0.8, speedY: 0.6, bodyHalfW: 20, bodyHalfD: 15,
     },
   },
@@ -42,7 +56,8 @@ export function createLevel(level = LEVEL) {
   return {
     def: level,
     segmentIndex: 0,
-    gateX: null,
+    gateX: null,     // 屏幕右缘的世界坐标（只用于夹玩家，不绘制）
+    camLockX: null,  // 锁定的镜头位置（null = 自由跟随）
     wave: [],
     spawnedSegments: new Set(),
     bossSpawned: false,
@@ -62,41 +77,63 @@ function spawn(world, cfg) {
   return actor;
 }
 
-/** 每个逻辑帧调用一次；负责刷怪、闸门与胜负。 */
+/**
+ * 由触发点推导锁定机位，并把这一场的屏幕右缘定为关卡边界。
+ * @param {number} triggerX 波次触发世界 X
+ * @param {number} maxSpawnX 本波最靠右的敌人出生 X（必须落在屏幕内）
+ */
+function lockForWave(lv, triggerX, maxSpawnX) {
+  const viewW = lv.def.viewW ?? VIEW_W;
+  const margin = lv.def.gateMargin ?? GATE_MARGIN;
+  const lead = lv.def.lockLead ?? LOCK_LEAD;
+  const maxCam = Math.max(0, lv.def.worldW - viewW);
+  // 至少要让最右侧的敌人完整出现在屏幕里；同时把触发点留在镜头内
+  const needForSpawns = maxSpawnX + 40 - (viewW - margin);
+  const lock = Math.max(0, Math.min(maxCam, Math.max(triggerX - lead, needForSpawns)));
+  lv.camLockX = Math.round(lock);
+  lv.gateX = lv.camLockX + viewW - margin;
+}
+
+/** 每个逻辑帧调用一次；负责刷怪、边界锁与胜负。 */
 export function updateLevel(world, lv) {
   if (lv.won) return;
   const player = world.player;
-  const seg = lv.def.segments[lv.segmentIndex];
 
-  // 闸门：把玩家夹在战场内（先夹紧再判断触发，避免一帧穿门）
-  if (lv.gateX != null && player.x > lv.gateX) player.x = lv.gateX;
+  // 边界：玩家夹在屏幕右缘内（先夹再判断触发，避免一帧穿过去）
+  if (lv.gateX != null && player.x > lv.gateX - 10) player.x = lv.gateX - 10;
+
+  const seg = lv.def.segments[lv.segmentIndex];
 
   if (seg && !lv.spawnedSegments.has(lv.segmentIndex) && player.x >= seg.triggerX) {
     lv.spawnedSegments.add(lv.segmentIndex);
-    lv.gateX = seg.gateX;
+    const maxSpawnX = Math.max(...seg.spawns.map((s) => s.x));
+    lockForWave(lv, seg.triggerX, maxSpawnX);
     lv.wave = seg.spawns.map((s) => spawn(world, s));
   }
 
   if (seg && lv.wave.length > 0 && lv.wave.every((e) => e.dead)) {
     lv.wave = [];
     lv.gateX = null;
+    lv.camLockX = null;
     lv.segmentIndex++;
   }
 
-  // 最后一波清完 → Boss 登场
+  // 最后一波清完 → Boss 登场（同样把屏幕右缘当战场边界）
   if (lv.segmentIndex >= lv.def.segments.length && !lv.bossSpawned && player.x >= lv.def.boss.triggerX) {
     lv.bossSpawned = true;
-    lv.gateX = lv.def.boss.gateX;
+    lockForWave(lv, lv.def.boss.triggerX, lv.def.boss.spawn.x);
     lv.bossActor = spawn(world, lv.def.boss.spawn);
   }
 
   if (lv.bossSpawned && lv.bossActor && lv.bossActor.dead) {
     lv.won = true;
     lv.gateX = null;
+    lv.camLockX = null;
   }
 }
 
-/** 相机的最大世界 X（闸门落下来时镜头也不能越过）。 */
+/** 相机的最大世界 X：锁定时就是锁定机位，否则是关卡末端。 */
 export function cameraLimit(lv) {
-  return lv.gateX == null ? lv.def.worldW : lv.gateX;
+  const viewW = lv.def.viewW ?? VIEW_W;
+  return lv.camLockX == null ? lv.def.worldW : lv.camLockX + viewW;
 }

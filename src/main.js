@@ -190,12 +190,12 @@ function logicStep() {
   audioEvents();
   while (state.lastEvents.length > 40) state.lastEvents.shift();
 
-  // 相机：带前瞻的阻尼跟随（不再是硬跟）
-  // 硬跟会让画面在玩家每一次微调方向时整体「弹一下」；阻尼 + 朝向前瞻能让镜头移动连续。
+  // 相机：波次进行中锁死在触发机位（屏幕右缘 = 关卡边界）；清完后恢复阻尼跟随
   const limit = cameraLimit(level);
   const maxCam = Math.max(0, limit - VIEW_W);
   const look = (world.player.facing || 1) * 26;
-  const target = Math.max(0, Math.min(maxCam, world.player.x + look - VIEW_W * 0.45));
+  let target = Math.max(0, Math.min(maxCam, world.player.x + look - VIEW_W * 0.45));
+  if (level.camLockX != null) target = level.camLockX;
   state.camTarget = target;
   if (!state.camInit) {
     state.camX = target;
@@ -345,20 +345,7 @@ function draw() {
     ctx.fillRect(0, Math.round(y), VIEW_W, 1);
   }
 
-  // 闸门：保留「这里过不去」的视觉提示，但不再用红色竖线（改成冷色微光 + 地面暗边）
-  if (level.gateX != null) {
-    const gx = Math.round(level.gateX - cam);
-    if (gx > -10 && gx < VIEW_W + 10) {
-      const grad = ctx.createLinearGradient(gx - 10, 0, gx + 10, 0);
-      grad.addColorStop(0, 'rgba(150,190,230,0)');
-      grad.addColorStop(0.5, 'rgba(150,190,230,.10)');
-      grad.addColorStop(1, 'rgba(150,190,230,0)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(gx - 10, GROUND_TOP - 90, 20, VIEW_H - GROUND_TOP + 90);
-      ctx.fillStyle = 'rgba(180,210,240,.22)';
-      ctx.fillRect(gx, GROUND_TOP - 90, 1, VIEW_H - GROUND_TOP + 90);
-    }
-  }
+  // 关卡边界不再画任何竖线：波次进行中镜头锁定，屏幕右缘本身就是墙。
 
   ctx.save();
   ctx.translate(Math.round(shakeX), Math.round(shakeY));
