@@ -1,0 +1,62 @@
+{
+  "dir": "tmp\\final-hero-v2",
+  "composeJson": "tmp\\final-hero-v2\\_compose.json",
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 3.09
+    },
+    "attack2": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.53
+    },
+    "attack3": {
+      "frames": 7,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 1.62
+    },
+    "death": {
+      "frames": 9,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 10.66
+    },
+    "dodge": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 9.77
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 2.96
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.15
+    },
+    "special": {
+      "frames": 9,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 6.2
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.81
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

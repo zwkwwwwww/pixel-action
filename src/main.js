@@ -169,7 +169,7 @@ let last = performance.now();
 function logicStep() {
   world.dir = dirFromKeys(keys);
   step(world);
-  updateLevel(world, level);
+  updateLevel(world, level, state.camX);
   state.frame++;
   state.won = level.won;
   state.lost = world.player.dead;

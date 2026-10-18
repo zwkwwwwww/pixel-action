@@ -20,21 +20,25 @@ case "$NAME" in
   *)    HEIGHT=48;  CELL=96x96; ANCHOR=48,88 ;;
 esac
 
-echo "== 1/4 ComfyUI 像素化重塑（可断点续跑）: $SRC -> $RAW"
+echo "== 1/5 ComfyUI 像素化重塑（可断点续跑）: $SRC -> $RAW"
 node tools/comfy/restyle.mjs --in "$SRC" --out "$RAW" \
   --strength 0.9 --denoise 0.5 \
   --prompt "detailed pixel art game sprite, limited 32 color palette, crisp hard pixel edges, hand-painted pixel shading, dark fantasy, side view, plain background" \
   --negative "green skin, weird colors, blurry, photo, 3d render, anti-aliasing, gradient, text, watermark"
 
-echo "== 2/4 压回像素网格 + 贴回 Blender alpha: $FINAL"
+echo "== 2/5 压回像素网格 + 贴回 Blender alpha: $FINAL"
 rm -rf "$FINAL"
 python tools/compose_final.py --restyled "$RAW" --alpha "$SRC" --out "$FINAL" \
   --height "$HEIGHT" --cell "$CELL" --anchor "$ANCHOR" --colors 32 --ref "$SRC/idle/idle_00.png"
 
-echo "== 3/4 帧间一致性闸门"
-python tools/frame_diff.py --in "$FINAL" --json-out "art-source/reports/frame-diff-${NAME}.json" --threshold 0.22
+echo "== 3/5 帧间一致性闸门（剪影交集 + 循环缝合判定）"
+python tools/frame_diff.py --in "$FINAL" --json-out "art-source/reports/frame-diff-${NAME}.json" \
+  --threshold 0.25 --loop-threshold 0.20 --loop-clips idle,walk
 
-echo "== 4/4 打包精灵表"
+echo "== 4/5 pivot 刚性闸门（后处理变换必须逐帧唯一）"
+python tools/pivot_drift.py --in "$FINAL" --json-out "art-source/reports/pivot-drift-${NAME}.json"
+
+echo "== 5/5 打包精灵表"
 python tools/pack_sprites.py --in "$FINAL" --out assets/sprites --name "$NAME" \
   --cell "$CELL" --anchor "$ANCHOR" \
   --clips idle,walk,attack1,attack2,attack3,dodge,hurt,death,special \

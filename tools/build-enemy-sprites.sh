@@ -17,7 +17,10 @@ for K in grunt brute ranger boss; do
     --out "tmp/final-enemies/$K" --height "$HEIGHT" --cell "$CELL" --anchor "$ANCHOR" \
     --colors 32 --ref "art-source/blender/enemies/$K/idle/idle_00.png"
   python tools/frame_diff.py --in "tmp/final-enemies/$K" \
-    --json-out "art-source/reports/frame-diff-$K.json" --threshold 0.22 || echo "!! $K 帧间差超阈值（见报告）"
+    --json-out "art-source/reports/frame-diff-$K.json" \
+    --threshold 0.25 --loop-threshold 0.20 --loop-clips idle,walk
+  python tools/pivot_drift.py --in "tmp/final-enemies/$K" \
+    --json-out "art-source/reports/pivot-drift-$K.json"
   python tools/pack_sprites.py --in "tmp/final-enemies/$K" --out assets/sprites --name "$K" \
     --cell "$CELL" --anchor "$ANCHOR" --clips idle,walk,attack1,hurt,death \
     --fps-map idle=16,walk=24,attack1=21,hurt=21,death=10

@@ -4,8 +4,23 @@
 关键：alpha 必须和 RGB 走**同一套裁剪/缩放/锚点变换**，否则会出现「人物是彩色但轮廓错位」
 （实测过：直接拿 pixelize 的裁切结果当 mask，会整帧变黑）。
 
+v2 的两个修正（都在 pivot_drift.py 的闸门下验证）：
+
+1. **固定裁剪框，而不是逐帧 bbox**。
+   旧实现把「每帧可见内容的中心」钉在锚点，任何非对称伸展（挥剑/倒地/抬手）都会把身体
+   推离锚点：hero attack2 实测漂移 17.5px，而碰撞盒用的是固定锚点 → 可见身体与判定框错位。
+   现在先用全部帧的 alpha 并集算出一个**固定裁剪框**（以站姿参考帧的根节点为中心），
+   所有帧共用同一个框，根节点恒映射到 anchor[0] → 横向漂移恒为 0。
+
+2. **预乘 alpha 下采样**。
+   旧实现直接把 RGB 用 LANCZOS 缩到像素网格，会把轮廓外的 AI 铺底灰（40,42,52）平均进
+   最外圈实心像素（实测外圈色差 22.3、4–5% 环像素被污染）。现在先乘 alpha 再按面积
+   （BOX）下采样、再反预乘，轮廓外颜色不再渗出；同时 LANCZOS 改为 BOX ——
+   art-contract.md 第 17 条本就禁止插值。
+
 用法:
-    python tools/compose_final.py --restyled tmp/restyled --alpha art-source/blender/hero --out tmp/final
+    python tools/compose_final.py --restyled tmp/restyled --alpha art-source/blender/hero --out tmp/final \
+        --height 56 --cell 96x96 --anchor 48,88 --colors 32 --ref art-source/blender/hero/idle/idle_00.png
 """
 from __future__ import annotations
 
@@ -14,6 +29,7 @@ import json
 import sys
 from pathlib import Path
 
+import numpy as np
 from PIL import Image
 
 CELL_DEFAULT = "96x96"
@@ -26,61 +42,120 @@ def parse_cell(s):
     return int(w), int(h)
 
 
-def standing_scale(ref_path: Path, height: int, threshold: int) -> tuple[float, int]:
-    """用一张「站姿参考帧」定死整个角色的缩放与脚底线。
+def alpha_mask(im: Image.Image, threshold: int) -> Image.Image:
+    return im.convert("RGBA").getchannel("A").point(lambda v: 255 if v >= threshold else 0)
 
-    为什么不能逐帧按包围盒高度缩放：倒地帧的高度只有站姿的 1/3，逐帧归一化会让角色
-    在死亡动画里突然被放大 3 倍（实测宽度冲到 123px 撑爆 96 的 cell）。
 
-    脚底线同样取参考帧：某些挥砍姿势武器会低于脚底，若按逐帧 bbox 底部贴锚点，
-    那一帧整个人会「浮」起来（敌人实测最深 -0.29 world ≈ 10px）。
-    """
-    im = Image.open(ref_path).convert("RGBA")
-    a = im.getchannel("A").point(lambda v: 255 if v >= threshold else 0)
-    bb = a.getbbox()
+def bbox_of(path: Path, threshold: int) -> tuple[int, int, int, int]:
+    bb = alpha_mask(Image.open(path), threshold).getbbox()
     if not bb:
-        raise ValueError(f"参考帧全透明: {ref_path}")
-    return height / (bb[3] - bb[1]), bb[3]
+        raise ValueError(f"全透明帧: {path}")
+    return bb
 
 
-def compose(restyled_path: Path, alpha_path: Path, height: int, cell, anchor, colors: int,
-            threshold: int, fixed_scale: float | None = None, ref_feet_y: int | None = None):
+def plan_box(frames: list[Path], ref: Path, height: int, cell, threshold: int) -> dict:
+    """算一个所有帧共用的固定裁剪框（以站姿参考帧的根节点为中心）。"""
+    boxes = [bbox_of(f, threshold) for f in frames]
+    ref_idx = frames.index(ref) if ref in frames else 0
+    rx0, ry0, rx1, ry1 = boxes[ref_idx]
+    scale = height / (ry1 - ry0)
+    feet_y = float(ry1)
+    root_x = (rx0 + rx1) / 2.0
+
+    cw, ch = cell
+    half = max(max(root_x - bb[0], bb[2] - root_x) for bb in boxes)
+    half = max(1.0, min(half, (cw / scale) / 2.0))          # 保证缩放后宽度装得进 cell
+    top = min(bb[1] for bb in boxes)
+    top = max(top, feet_y - ch / scale)                      # 保证缩放后高度装得进 cell
+
+    w, h = Image.open(frames[0]).size
+    left = max(0, int(np.floor(root_x - half)))
+    right = min(w, int(np.ceil(root_x + half)))
+    top_i = max(0, int(np.floor(top)))
+    bottom = min(h, int(np.ceil(feet_y)))
+    if right - left < 2 or bottom - top_i < 2:
+        raise ValueError("裁剪框退化")
+    return {
+        "box": (left, top_i, right, bottom),
+        "scale": scale,
+        "feetY": feet_y,
+        "rootX": root_x,
+    }
+
+
+def downscale_premultiplied(rgb: Image.Image, alpha: Image.Image, size) -> tuple[Image.Image, Image.Image]:
+    """预乘 alpha 的按面积下采样：轮廓外的颜色不会渗进边缘像素。"""
+    rgb_np = np.asarray(rgb.convert("RGB"), dtype=np.float32)
+    a_np = np.asarray(alpha, dtype=np.float32)
+    pre = np.clip(rgb_np * (a_np[..., None] / 255.0), 0, 255).astype(np.uint8)
+
+    pre_img = Image.fromarray(pre, mode="RGB").resize(size, Image.BOX)
+    a_img = alpha.resize(size, Image.BOX)
+
+    pre_out = np.asarray(pre_img, dtype=np.float32)
+    a_out = np.asarray(a_img, dtype=np.float32)
+    denom = np.maximum(a_out[..., None], 1e-6)
+    rgb_out = np.clip(pre_out * (255.0 / denom), 0, 255).astype(np.uint8)
+    rgb_out[a_out < 1] = 0
+    return Image.fromarray(rgb_out, mode="RGB"), Image.fromarray(np.clip(a_out, 0, 255).astype(np.uint8), mode="L")
+
+
+def compose(restyled_path: Path, alpha_path: Path, cell, anchor, colors: int, threshold: int,
+            plan: dict, legacy_bbox: bool = False):
     restyled = Image.open(restyled_path).convert("RGB")
     src = Image.open(alpha_path).convert("RGBA")
     if restyled.size != src.size:
         raise ValueError(f"尺寸不一致: restyled {restyled.size} vs alpha {src.size}")
-    alpha = src.getchannel("A").point(lambda a: 255 if a >= threshold else 0)
-    bbox = alpha.getbbox()
-    if not bbox:
-        raise ValueError("alpha 全透明")
-    x0, y0, x1, y1 = bbox
-    bw, bh = x1 - x0, y1 - y0
 
-    scale = fixed_scale if fixed_scale else height / bh
-    nw, nh = max(1, round(bw * scale)), max(1, round(bh * scale))
     cw, ch = cell
+    scale = plan["scale"]
+
+    if legacy_bbox:
+        # 旧行为，仅用于 A/B 对比与回退
+        a = alpha_mask(src, threshold)
+        bb = a.getbbox()
+        if not bb:
+            raise ValueError("alpha 全透明")
+        x0, y0, x1, y1 = bb
+        nw, nh = max(1, round((x1 - x0) * scale)), max(1, round((y1 - y0) * scale))
+        if nw > cw:
+            raise ValueError(f"缩放后宽度 {nw} 超过 cell {cw}")
+        rgb = restyled.crop(bb).resize((nw, nh), Image.LANCZOS)
+        if colors and colors < 256:
+            rgb = rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+        aa = a.crop(bb).resize((nw, nh), Image.NEAREST)
+        sprite = rgb.convert("RGBA")
+        sprite.putalpha(aa)
+        canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
+        paste_y = anchor[1] - round((y1 - y0) * scale)
+        canvas.alpha_composite(sprite, (anchor[0] - nw // 2, paste_y))
+        return canvas, {"mode": "legacy", "scaled": [nw, nh], "scale": round(scale, 4)}
+
+    left, top, right, bottom = plan["box"]
+    nw = max(1, round((right - left) * scale))
+    nh = max(1, round((bottom - top) * scale))
     if nw > cw:
         raise ValueError(f"缩放后宽度 {nw} 超过 cell {cw}")
 
-    rgb = restyled.crop(bbox).resize((nw, nh), Image.LANCZOS)
+    rgb_crop = restyled.crop((left, top, right, bottom))
+    alpha_crop = alpha_mask(src, threshold).crop((left, top, right, bottom))
+    rgb, a_small = downscale_premultiplied(rgb_crop, alpha_crop, (nw, nh))
     if colors and colors < 256:
         rgb = rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
-    a = alpha.crop(bbox).resize((nw, nh), Image.NEAREST)
 
     sprite = rgb.convert("RGBA")
-    sprite.putalpha(a)
+    sprite.putalpha(a_small.point(lambda v: 255 if v >= threshold else 0))
     canvas = Image.new("RGBA", (cw, ch), (0, 0, 0, 0))
 
-    # 脚底线：优先用参考帧定死的线（武器低于脚底时不让人物整体上浮），
-    # 姿势抬脚时仍允许按当前 bbox 底部自然上抬。
-    eff_bottom = y1
-    if ref_feet_y is not None and y1 > ref_feet_y + 4:
-        eff_bottom = ref_feet_y
-    paste_y = anchor[1] - round((eff_bottom - y0) * scale)
-    canvas.alpha_composite(sprite, (anchor[0] - nw // 2, paste_y))
+    # 根节点恒映射到锚点：所有帧同一个裁剪框、同一个缩放 → 横向漂移恒为 0
+    root_in_box = (plan["rootX"] - left) * scale
+    paste_x = int(round(anchor[0] - root_in_box))
+    paste_y = anchor[1] - nh
+    canvas.alpha_composite(sprite, (paste_x, paste_y))
     return canvas, {
-        "bbox": [x0, y0, x1, y1], "scaled": [nw, nh],
-        "scale": round(scale, 4), "effBottom": eff_bottom,
+        "mode": "fixed-box", "box": [left, top, right, bottom],
+        "scaled": [nw, nh], "scale": round(scale, 4),
+        "paste": [paste_x, paste_y],
     }
 
 
@@ -95,6 +170,7 @@ def main() -> int:
     ap.add_argument("--colors", type=int, default=32)
     ap.add_argument("--ref", default=None, help="站姿参考帧，用来定死全角色统一缩放（强烈建议传 idle_00）")
     ap.add_argument("--threshold", type=int, default=128)
+    ap.add_argument("--legacy-bbox", action="store_true", help="回到旧的逐帧 bbox 居中（仅用于 A/B 与回退）")
     args = ap.parse_args()
 
     cell = parse_cell(args.cell)
@@ -106,35 +182,49 @@ def main() -> int:
         print(f"错误: {root} 没有 PNG", file=sys.stderr)
         return 2
 
-    fixed = None
-    ref_feet = None
-    if args.ref:
-        try:
-            fixed, ref_feet = standing_scale(Path(args.ref), args.height, args.threshold)
-        except ValueError as e:
-            print(f"错误: {e}", file=sys.stderr)
-            return 2
-        print(json.dumps({"ref": args.ref, "fixedScale": round(fixed, 4), "refFeetY": ref_feet}, ensure_ascii=False))
-
-    n = 0
+    # 同一角色的所有帧共用一套裁剪/缩放参数
+    alpha_files = []
     for f in files:
-        rel = f.relative_to(root)
-        apath = alpha_root / rel
+        apath = alpha_root / f.relative_to(root)
         if not apath.exists():
             print(f"错误: 缺少 alpha 源 {apath}", file=sys.stderr)
             return 2
+        alpha_files.append(apath)
+
+    ref_path = Path(args.ref) if args.ref else alpha_files[0]
+    try:
+        plan = plan_box(alpha_files, ref_path, args.height, cell, args.threshold)
+    except ValueError as e:
+        print(f"错误: {e}", file=sys.stderr)
+        return 2
+    print(json.dumps({"ref": str(ref_path), "box": plan["box"], "scale": round(plan["scale"], 4),
+                      "rootX": plan["rootX"], "feetY": plan["feetY"]}, ensure_ascii=False))
+
+    n = 0
+    transforms = {}
+    for f, apath in zip(files, alpha_files):
         try:
-            img, _info = compose(f, apath, args.height, cell, anchor, args.colors, args.threshold, fixed, ref_feet)
+            img, info = compose(f, apath, cell, anchor, args.colors, args.threshold, plan, args.legacy_bbox)
         except ValueError as e:
             print(f"错误 {f}: {e}", file=sys.stderr)
             return 1
-        dst = out_root / rel
+        dst = out_root / f.relative_to(root)
         dst.parent.mkdir(parents=True, exist_ok=True)
         img.save(dst)
+        transforms[str(f.relative_to(root))] = info
         n += 1
 
+    # 变换清单：供 pivot_drift.py 断言「后处理变换逐帧唯一」，也便于排查
+    (out_root / "_compose.json").write_text(
+        json.dumps({"cell": list(cell), "anchor": list(anchor), "plan": plan,
+                    "legacy": args.legacy_bbox, "transforms": transforms},
+                   ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+
     print(json.dumps({"restyled": str(root), "alpha": str(alpha_root), "out": str(out_root),
-                      "colors": args.colors, "height": args.height, "count": n}, ensure_ascii=False))
+                      "colors": args.colors, "height": args.height, "count": n,
+                      "mode": "legacy" if args.legacy_bbox else "fixed-box"}, ensure_ascii=False))
     return 0
 
 

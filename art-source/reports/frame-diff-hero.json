@@ -1,144 +1,160 @@
 {
-  "dir": "tmp\\final-hero",
-  "threshold": 0.22,
+  "dir": "tmp\\final-hero-v2",
+  "threshold": 0.25,
+  "loopThreshold": 0.2,
+  "loopClips": [
+    "idle",
+    "walk"
+  ],
   "clips": {
     "attack1": {
       "frames": 6,
-      "max": 0.0439,
-      "mean": 0.0309,
-      "perPair": [
-        0.0271,
-        0.0439,
-        0.0232,
-        0.0312,
-        0.0294
+      "cellMax": 0.0241,
+      "maskMax": 0.1263,
+      "maskMean": 0.1029,
+      "perPairMask": [
+        0.1128,
+        0.1028,
+        0.1015,
+        0.0711,
+        0.1263
       ],
-      "loopDiff": 0.0366,
+      "loopDiff": 0.1401,
       "pass": true
     },
     "attack2": {
       "frames": 6,
-      "max": 0.043,
-      "mean": 0.0294,
-      "perPair": [
-        0.0317,
-        0.0374,
-        0.043,
-        0.0066,
-        0.0283
+      "cellMax": 0.0179,
+      "maskMax": 0.1475,
+      "maskMean": 0.1103,
+      "perPairMask": [
+        0.0786,
+        0.0938,
+        0.1422,
+        0.0895,
+        0.1475
       ],
-      "loopDiff": 0.0417,
+      "loopDiff": 0.1255,
       "pass": true
     },
     "attack3": {
       "frames": 7,
-      "max": 0.0436,
-      "mean": 0.0357,
-      "perPair": [
-        0.0354,
-        0.0371,
-        0.0394,
-        0.0436,
-        0.0306,
-        0.0278
+      "cellMax": 0.0271,
+      "maskMax": 0.2284,
+      "maskMean": 0.1327,
+      "perPairMask": [
+        0.094,
+        0.1441,
+        0.2284,
+        0.1279,
+        0.0775,
+        0.1245
       ],
-      "loopDiff": 0.042,
+      "loopDiff": 0.1899,
       "pass": true
     },
     "death": {
       "frames": 9,
-      "max": 0.0349,
-      "mean": 0.0238,
-      "perPair": [
-        0.0209,
-        0.0257,
-        0.0307,
-        0.0349,
-        0.0255,
-        0.0266,
-        0.0144,
-        0.0118
+      "cellMax": 0.0331,
+      "maskMax": 0.2251,
+      "maskMean": 0.1978,
+      "perPairMask": [
+        0.1966,
+        0.2123,
+        0.2023,
+        0.2251,
+        0.2095,
+        0.195,
+        0.1704,
+        0.1714
       ],
-      "loopDiff": 0.0393,
+      "loopDiff": 0.1779,
       "pass": true
     },
     "dodge": {
       "frames": 6,
-      "max": 0.0437,
-      "mean": 0.0315,
-      "perPair": [
-        0.0397,
-        0.0246,
-        0.0231,
-        0.0264,
-        0.0437
+      "cellMax": 0.0359,
+      "maskMax": 0.1908,
+      "maskMean": 0.1545,
+      "perPairMask": [
+        0.1871,
+        0.1401,
+        0.1259,
+        0.1286,
+        0.1908
       ],
-      "loopDiff": 0.0115,
+      "loopDiff": 0.0898,
       "pass": true
     },
     "hurt": {
       "frames": 3,
-      "max": 0.0226,
-      "mean": 0.0212,
-      "perPair": [
-        0.0199,
-        0.0226
+      "cellMax": 0.0272,
+      "maskMax": 0.195,
+      "maskMean": 0.1935,
+      "perPairMask": [
+        0.195,
+        0.1919
       ],
-      "loopDiff": 0.0309,
+      "loopDiff": 0.1835,
       "pass": true
     },
     "idle": {
       "frames": 8,
-      "max": 0.0055,
-      "mean": 0.004,
-      "perPair": [
-        0.0037,
-        0.0035,
-        0.0045,
-        0.003,
-        0.0055,
-        0.0044,
-        0.0031
+      "cellMax": 0.0047,
+      "maskMax": 0.0492,
+      "maskMean": 0.0449,
+      "perPairMask": [
+        0.0488,
+        0.0492,
+        0.0406,
+        0.0419,
+        0.0477,
+        0.0486,
+        0.0373
       ],
-      "loopDiff": 0.0052,
-      "pass": true
+      "loopDiff": 0.0406,
+      "pass": true,
+      "loopPass": true
     },
     "special": {
       "frames": 9,
-      "max": 0.0466,
-      "mean": 0.0318,
-      "perPair": [
-        0.0318,
-        0.0336,
-        0.0262,
-        0.0466,
-        0.0461,
-        0.0281,
-        0.0182,
-        0.0239
+      "cellMax": 0.0303,
+      "maskMax": 0.1493,
+      "maskMean": 0.124,
+      "perPairMask": [
+        0.1259,
+        0.1077,
+        0.1493,
+        0.112,
+        0.1262,
+        0.1329,
+        0.1192,
+        0.1186
       ],
-      "loopDiff": 0.0308,
+      "loopDiff": 0.1371,
       "pass": true
     },
     "walk": {
       "frames": 12,
-      "max": 0.0236,
-      "mean": 0.02,
-      "perPair": [
-        0.0234,
-        0.0216,
-        0.0118,
-        0.0233,
-        0.0217,
-        0.0221,
-        0.0211,
-        0.0234,
-        0.0236,
-        0.0072,
-        0.0207
+      "cellMax": 0.0194,
+      "maskMax": 0.0999,
+      "maskMean": 0.0851,
+      "perPairMask": [
+        0.0896,
+        0.0856,
+        0.0999,
+        0.0755,
+        0.0745,
+        0.0715,
+        0.0844,
+        0.0931,
+        0.0949,
+        0.0951,
+        0.0717
       ],
-      "loopDiff": 0.0239,
-      "pass": true
+      "loopDiff": 0.0712,
+      "pass": true,
+      "loopPass": true
     }
   },
   "failedClips": [],
