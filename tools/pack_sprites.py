@@ -50,12 +50,18 @@ def main() -> int:
     ap.add_argument("--anchor", default="48,88")
     ap.add_argument("--clips", default=",".join(CLIP_META.keys()))
     ap.add_argument("--expect", default="", help="可选: idle=4,walk=6 强制校验帧数")
+    ap.add_argument("--fps-map", default="", help="可选: idle=16,walk=24 覆盖每剪辑播放帧率")
     args = ap.parse_args()
 
     inp = Path(args.inp)
     cell = parse_size(args.cell)
     anchor = tuple(int(v) for v in args.anchor.split(","))
     clips = [c.strip() for c in args.clips.split(",") if c.strip()]
+    fps_over = {}
+    if args.fps_map:
+        for pair in args.fps_map.split(","):
+            k, v = pair.split("=")
+            fps_over[k.strip()] = int(v)
     expect = {}
     if args.expect:
         for pair in args.expect.split(","):
@@ -97,6 +103,8 @@ def main() -> int:
             sheet.alpha_composite(im, (c * cell[0], r * cell[1]))
             frames.append([c * cell[0], r * cell[1]])
         m = dict(CLIP_META.get(clip, {"fps": 10, "loop": False}))
+        if clip in fps_over:
+            m["fps"] = fps_over[clip]
         m["frames"] = frames
         meta["clips"][clip] = m
 

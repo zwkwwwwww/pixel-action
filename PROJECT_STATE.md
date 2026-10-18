@@ -26,20 +26,21 @@
 
 ## 当前状态
 
-- 当前 Phase：**贯穿 Phase 0~5 的垂直切片已全部打通，待人类验收**
-- 当前分支：`main`
+- 当前 Phase：**第 2 轮优化完成（音效 / 弓手射击 / 动画加帧 / 平滑镜头），待人类验收**
+- 当前分支：`main`，tag 见 `phase-slice-2`
 - 运行状态：**正常**
-- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **72 pass / 0 fail**（含无作弊自动通关）
-- 最近验证证据（全部实测）：
-  - 标题 `art-source/evidence/title.png`；战斗 `e2e-wave.png`、`fx-combat.png`；Boss `e2e-boss.png`；通关 `e2e-win.png`
-  - 素材总览 `art-source/evidence/contact-sheet.png`
-  - 精灵表：`assets/sprites/{hero,grunt,brute,ranger,boss}.png` + `.json`（hero 9 剪辑 41 帧；敌人各 5 剪辑 22 帧）
-  - 帧间一致性：`art-source/reports/frame-diff-*.json` → **所有剪辑最大 0.057，阈值 0.22，全绿**
-  - CDP 端到端：`artLoaded` 5/5、`artMissing:[]`、`consoleErrors:[]`；
-    真实按键清完第 1 波 → `segmentIndex:1`；Boss 出场 `hp:420`、`bodyHalfW:20`、`bgm:bgm_boss`；
-    18 次攻击造成 **136 伤害**、玩家被反击到 hp 94；击杀 Boss → `won:true`、BGM 停、播放 `sfx_victory`
-  - 音频：`ctxState:"running"`、`loaded:8 / failed:[]`、实际播出 `sfx_swing/sfx_hit/sfx_death/sfx_victory` + `bgm_battle/bgm_boss`
-  - 性能：常规 60fps（逻辑 0.04ms / 绘制 0.37ms）；**240 粒子 + 300 飘字**压力下仍 **60.4fps**（绘制 0.62ms，上限 8ms）
+- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **80 pass / 0 fail**（新增 8 条投射物用例）
+- 第 2 轮四项改动与证据：
+  1. **音效**：短音效从 ACE-Step 换成 DSP 合成（`tools/sfx-synth.py`），BGM 仍用 ACE。
+     起音时间 swing 375ms→4.4ms、hit 666ms→1.0ms、dodge 质心 180→1859Hz、death 旧版峰值仅 0.011（几乎无声）→新版可听。
+     证据 `art-source/reports/audio-compare.json`；浏览器实测 `loaded:9 / failed:[]`，播放 `sfx_bow/sfx_hit/sfx_swing`。
+  2. **弓手射击**：新增投射物系统（`world.projectiles` + `ATTACKS.shoot`），弓手会走位对齐车道再放箭。
+     实测 `rangers:1 / shotEvents:2 / 玩家 hp 111→95 / sawArrow:true`；闪避无敌帧可躲箭（单测覆盖）。
+  3. **动画加帧**：构建脚本对关键帧做线性重采样（循环剪辑环绕插值），hero 41→66 帧（idle 8/walk 12/attack1 6…），
+     敌人/Boss 41→54 帧；fps 同比例抬高，动作总时长不变。帧间一致性全绿（最大 0.055）。
+  4. **平滑镜头**：阻尼跟随 + 朝向前瞻（26px），150ms 内最大位移 0.08px；相机取整一次供所有图层共用。
+- 新增脚本：`tools/sfx-synth.py`（音效合成）、`tools/audio-manifest.py`（重建清单）、
+  `tools/audio-analyze.py`（音效客观指标对比）、`tools/comfy/restyle-denser.sh`（增量重塑）。
 
 ## 运行方式（已实测）
 

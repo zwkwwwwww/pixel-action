@@ -64,6 +64,7 @@ export function startAttack(a, attackId) {
   a.stateFrame = 0;
   a.queued = null;
   a.hitTargets.clear();
+  a.shotFired = false; // 每次出招只允许放一支箭
   a.vx = 0;
   a.vy = 0;
 }

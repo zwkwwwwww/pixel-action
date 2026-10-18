@@ -167,6 +167,8 @@ def main():
     for clip in wanted:
         n, fps, loop = CLIPS[clip]
         action = bpy.data.actions[clip]
+        # 构建脚本可能对动作做过关键帧重采样，以 action 实际帧数为准
+        n = int(action.get("frame_count", n))
         assign_action(arm, action)
         clip_dir = os.path.join(out_root, clip)
         cell_dir = os.path.join(cell_root, clip)

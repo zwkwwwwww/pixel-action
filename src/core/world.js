@@ -19,6 +19,7 @@ export function createWorld({ player, enemies = [], enemyThink = null } = {}) {
     player: p,
     enemies: es,
     actors: [p, ...es],
+    projectiles: [],
     events: [],
     enemyThink,
     _hitstopApplied: 0,
@@ -74,6 +75,7 @@ function resolveHits(world) {
   for (const a of world.actors) {
     if (a.state !== 'attack' || !a.attack) continue;
     const def = ATTACKS[a.attack];
+    if (!def.reach) continue; // 纯投射物招式没有近战判定盒
     if (!isActive(def, a.stateFrame)) continue;
     const box = hitbox(def, a);
     for (const b of world.actors) {
@@ -86,8 +88,9 @@ function resolveHits(world) {
   }
 }
 
-function applyHit(world, attacker, target, def) {
-  attacker.hitTargets.add(target.uid);
+function applyHit(world, attacker, target, def, opts = {}) {
+  // 投射物没有 hitTargets（它命中也只结算一次就销毁），这里容忍缺省
+  if (attacker.hitTargets) attacker.hitTargets.add(target.uid);
   target.hp -= def.dmg;
   target.hurtTime = def.hitstun;
   target.stateFrame = 0;
@@ -129,7 +132,71 @@ function applyHit(world, attacker, target, def) {
     launch: def.launch,
     killed: target.dead,
     meter: attacker.meter,
+    ...opts,
   });
+}
+
+// ——— 投射物（弓手的箭）———
+// 箭是独立实体：生成后自己飞、自己判碰撞，不占用角色的命中盒与 hitTargets。
+let projSeq = 0;
+
+function spawnProjectiles(world) {
+  for (const a of world.actors) {
+    if (a.state !== 'attack' || !a.attack) continue;
+    const def = ATTACKS[a.attack];
+    if (!def.projectile || a.shotFired) continue;
+    if (!isActive(def, a.stateFrame)) continue;
+    a.shotFired = true;
+    const pr = def.projectile;
+    world.projectiles.push({
+      uid: `p${++projSeq}`,
+      ownerUid: a.uid,
+      side: a.side,
+      x: a.x + a.facing * (pr.offsetX ?? 12),
+      y: a.y,
+      vx: a.facing * pr.speed,
+      dmg: def.dmg,
+      hitstun: def.hitstun,
+      halfDepth: pr.halfDepth ?? 7,
+      age: 0,
+      life: pr.life,
+      attack: a.attack,
+    });
+    world.events.push({
+      type: 'shoot', uid: a.uid, x: a.x, y: a.y, side: a.side, facing: a.facing,
+    });
+  }
+}
+
+function updateProjectiles(world) {
+  for (let i = world.projectiles.length - 1; i >= 0; i--) {
+    const pr = world.projectiles[i];
+    pr.age++;
+    pr.x += pr.vx;
+    if (pr.age >= pr.life || pr.x < -48 || pr.x > 3248) {
+      world.projectiles.splice(i, 1);
+      continue;
+    }
+    const box = {
+      x1: pr.x - 6, x2: pr.x + 6,
+      y1: pr.y - pr.halfDepth, y2: pr.y + pr.halfDepth,
+    };
+    let hit = false;
+    for (const t of world.actors) {
+      if (t.side === pr.side || t.dead || t.invuln > 0) continue;
+      if (!overlaps(box, bodyBox(t))) continue;
+      applyHit(
+        world,
+        { uid: pr.ownerUid, side: pr.side, facing: Math.sign(pr.vx) || 1, meter: 0, attack: pr.attack },
+        t,
+        { dmg: pr.dmg, hitstun: pr.hitstun, kbX: 0.6, launch: 0, meterGain: 0 },
+        { ranged: true, projectile: pr.uid },
+      );
+      hit = true;
+      break;
+    }
+    if (hit) world.projectiles.splice(i, 1);
+  }
 }
 
 /** 推进一个逻辑帧（固定 60fps）。 */
@@ -143,6 +210,8 @@ export function step(world) {
   handleIntent(world);
   if (world.enemyThink) world.enemyThink(world);
   for (const a of world.actors) updateActor(a);
+  spawnProjectiles(world);
+  updateProjectiles(world);
   resolveHits(world);
   world.buffer.tick(world.frame);
 

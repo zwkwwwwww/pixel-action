@@ -231,9 +231,10 @@ def main():
     for clip in wanted:
         n, fps, loop = CLIPS[clip]
         action = bpy.data.actions[clip]
-        have = action.get("frame_count", n)
+        have = int(action.get("frame_count", n))
         if have < n:
             raise SystemExit("action %s has %s frames, contract wants %d" % (clip, have, n))
+        n = have  # 构建脚本可能加过帧，按实际帧数渲染
         assign_action(arm, action)
         clip_dir = os.path.join(out_root, clip)
         cell_dir = os.path.join(cell_root, clip)

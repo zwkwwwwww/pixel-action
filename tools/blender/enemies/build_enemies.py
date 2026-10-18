@@ -57,7 +57,10 @@ PARTS: list[bpy.types.Object] = []
 def mat(name, rgb, rough=0.72, metal=0.0, spec=0.35):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
-    bsdf = m.node_tree.nodes.get("Principled BSDF")
+    # 按类型找节点，别按名字找：中文界面下节点名是「原理化 BSDF」
+    bsdf = next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        raise RuntimeError("material %s has no Principled BSDF" % name)
     bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
@@ -437,16 +440,49 @@ def clip_special():
 
 
 CLIPS = [
-    ("idle", clip_idle, 8, True),
-    ("walk", clip_walk, 12, True),
-    ("attack1", clip_attack1, 14, False),
-    ("attack2", clip_attack2, 14, False),
-    ("attack3", clip_attack3, 12, False),
-    ("dodge", clip_dodge, 16, False),
-    ("hurt", clip_hurt, 14, False),
-    ("death", clip_death, 10, False),
-    ("special", clip_special, 12, False),
+    # name, builder, fps, loop, target_frames（0 = 不重采样）
+    ("idle", clip_idle, 8, True, 8),
+    ("walk", clip_walk, 12, True, 12),
+    ("attack1", clip_attack1, 14, False, 6),
+    ("attack2", clip_attack2, 14, False, 0),
+    ("attack3", clip_attack3, 12, False, 0),
+    ("dodge", clip_dodge, 16, False, 0),
+    ("hurt", clip_hurt, 14, False, 3),
+    ("death", clip_death, 10, False, 0),
+    ("special", clip_special, 12, False, 0),
 ]
+
+
+def _lerp_pose(a, b, t):
+    out = {}
+    for bone_name in set(a) | set(b):
+        pa = a.get(bone_name, {})
+        pb = b.get(bone_name, {})
+        spec = {}
+        for key in set(pa) | set(pb):
+            va = pa.get(key, 0.0)
+            vb = pb.get(key, 0.0)
+            spec[key] = va + (vb - va) * t
+        out[bone_name] = spec
+    return out
+
+
+def resample_clip(poses, target, loop):
+    """相邻 pose 线性插值，把稀疏动画补密（循环剪辑用环绕插值）。"""
+    n = len(poses)
+    if target <= 0 or target == n:
+        return list(poses)
+    out = []
+    for i in range(target):
+        if loop:
+            u = i * n / target
+        else:
+            u = i * (n - 1) / (target - 1) if target > 1 else 0.0
+        i0 = int(math.floor(u)) % n
+        i1 = (i0 + 1) % n if loop else min(i0 + 1, n - 1)
+        t = u - math.floor(u)
+        out.append(_lerp_pose(poses[i0], poses[i1], t))
+    return out
 
 
 def bake_actions(arm):
@@ -454,8 +490,10 @@ def bake_actions(arm):
         pb.rotation_mode = "QUATERNION"
     ad = arm.animation_data_create()
     actions = {}
-    for name, builder, fps, loop in CLIPS:
-        frames = builder()
+    for name, builder, fps, loop, target in CLIPS:
+        raw = builder()
+        frames = resample_clip(raw, target, loop)
+        fps = round(fps * len(frames) / len(raw))
         ad.action = None
         for i, p in enumerate(frames, start=1):
             reset_pose(arm)
@@ -498,7 +536,7 @@ def bake_actions(arm):
         ad.action = None
         print("action %s: %d frames @ %dfps" % (name, len(frames), fps))
 
-    for name, _b, _f, _l in CLIPS:
+    for name, _b, _f, _l, _t in CLIPS:
         try:
             track = ad.nla_tracks.new()
             track.name = name
@@ -540,7 +578,7 @@ def setup_scene(kind, height, target_px, render_px, cell, anchor, samples=16):
     world = bpy.data.worlds.get("World") or bpy.data.worlds.new("World")
     SCENE.world = world
     world.use_nodes = True
-    bg = world.node_tree.nodes.get("Background")
+    bg = next((n for n in world.node_tree.nodes if n.type == "BACKGROUND"), None)
     bg.inputs["Color"].default_value = (0.055, 0.07, 0.105, 1.0)
     bg.inputs["Strength"].default_value = 1.4
 
@@ -1385,7 +1423,7 @@ def main():
     scene_cfg = setup_scene(kind, cfg["height"], cfg["target_px"], cfg["render_px"],
                             cfg["cell"], cfg["anchor"], samples=16)
     scene_cfg["clips"] = {n: {"frames": len(b()), "fps": f, "loop": l}
-                          for n, b, f, l in CLIPS}
+                          for n, b, f, l, t in CLIPS}
 
     # measured bounds (rest pose)
     corners = [mesh.matrix_world @ Vector(c) for c in mesh.bound_box]

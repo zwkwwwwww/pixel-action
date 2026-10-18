@@ -46,6 +46,15 @@ export const ATTACKS = {
     meterGain: 0, meterCost: 0,
     chainTo: null,
   },
+  shoot: {
+    // 弓手专用：没有近战判定盒，靠 projectile 在 active 帧生成一支箭
+    startup: 8, active: 1, recovery: 16,
+    dmg: 9, hitstun: 12, kbX: 0.6, launch: 0,
+    reach: 0, halfDepth: 0,
+    meterGain: 0, meterCost: 0,
+    chainTo: null,
+    projectile: { speed: 3.4, life: 150, offsetX: 12, halfDepth: 7 },
+  },
 };
 
 /** 当前帧是否处于攻击判定窗口（左闭右开，帧是浮点也安全）。 */

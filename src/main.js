@@ -181,6 +181,8 @@ function logicStep() {
       state.flash = Math.max(state.flash, ev.killed ? 0.5 : 0.25);
       spawnHitFx(fx, ev);
       playSfx('sfx_hit', { volume: ev.killed ? 0.8 : 0.55 });
+    } else if (ev.type === 'shoot') {
+      playSfx('sfx_bow', { volume: 0.55 });
     }
     state.lastEvents.push(ev);
   }
@@ -188,10 +190,20 @@ function logicStep() {
   audioEvents();
   while (state.lastEvents.length > 40) state.lastEvents.shift();
 
-  // 相机：跟随玩家并夹在闸门内
+  // 相机：带前瞻的阻尼跟随（不再是硬跟）
+  // 硬跟会让画面在玩家每一次微调方向时整体「弹一下」；阻尼 + 朝向前瞻能让镜头移动连续。
   const limit = cameraLimit(level);
-  const target = Math.max(0, Math.min(limit - VIEW_W, world.player.x - VIEW_W * 0.45));
-  state.camX = Math.max(0, target);
+  const maxCam = Math.max(0, limit - VIEW_W);
+  const look = (world.player.facing || 1) * 26;
+  const target = Math.max(0, Math.min(maxCam, world.player.x + look - VIEW_W * 0.45));
+  state.camTarget = target;
+  if (!state.camInit) {
+    state.camX = target;
+    state.camInit = true;
+  } else {
+    state.camX += (target - state.camX) * 0.14;
+    state.camX = Math.max(0, Math.min(maxCam, state.camX));
+  }
 }
 
 function drawBlock(x, y, w, h, color, outline = '#0a0d12') {
@@ -284,7 +296,8 @@ function drawTitle() {
 
 function draw() {
   if (state.mode === 'title') { drawTitle(); return; }
-  const cam = state.camX;
+  // 相机取整一次：所有图层用同一个整数偏移，避免背景与角色相对抖动
+  const cam = Math.round(state.camX);
   const shakeX = (Math.random() - 0.5) * state.shake;
   const shakeY = (Math.random() - 0.5) * state.shake;
 
@@ -418,6 +431,22 @@ function draw() {
     }
   }
   ctx.restore();
+
+  // —— 箭（弓手投射物）：深色描边 + 亮色箭杆，保证在暗背景上也能看清 ——
+  for (const pr of world.projectiles) {
+    const ax = Math.round(pr.x - cam);
+    const ay = Math.round(GROUND_TOP + pr.y - 16);
+    if (ax < -16 || ax > VIEW_W + 16) continue;
+    const dir = pr.vx >= 0 ? 1 : -1;
+    ctx.fillStyle = '#0a0d12';
+    ctx.fillRect(ax - 5, ay - 1, 11, 3);
+    ctx.fillStyle = '#e8dcc0';
+    ctx.fillRect(ax - 4, ay, 9, 1);
+    ctx.fillStyle = '#ffd166';
+    ctx.fillRect(ax + dir * 4 - (dir > 0 ? 0 : 1), ay - 1, 2, 3);
+    ctx.fillStyle = '#d2483f';
+    ctx.fillRect(ax - dir * 4, ay - 1, 2, 3);
+  }
 
   // —— 打击特效：火花 + 伤害数字 ——
   for (const pt of fx.particles) {

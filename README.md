@@ -6,7 +6,10 @@
 - 原生 **HTML5 Canvas + ES Module**，零框架零依赖
 - 主角 / 敌人 / Boss 美术：Blender 低模 + 骨骼动画 → 正交渲染 → **ComfyUI（Z-Image-Turbo + Fun-ControlNet）像素化重塑** → 精灵表
 - 场景 / 标题背景：ComfyUI 出图 → 48 色量化
-- 音效 / BGM：ComfyUI **ACE-Step 1.5** 生成，无任何外部版权素材
+- 音效：**DSP 合成**（噪声整形 + 扫频 + 瞬态包络，80~900ms），BGM 仍由 ComfyUI **ACE-Step 1.5** 生成，无任何外部版权素材
+- 角色动画 **12 帧走路 / 8 帧待机**（原始 6/4 帧，构建时做关键帧重采样），60fps 下动作不再一顿一顿
+- 敌方弓手有独立**投射物系统**：会走位对齐车道、拉弓放箭，箭可被闪避无敌帧躲掉
+- 镜头是**带朝向前瞻的阻尼跟随**，不再硬跟玩家
 
 ## 怎么玩
 
@@ -43,8 +46,12 @@ node --test "tests/**/*.test.mjs"        # 72 条纯逻辑单测（含无作弊�
 | 清第 1 波（真实按键） | `segmentIndex:1`，2 杀，hp 112 |
 | Boss | 出场 hp 420、体型 20；18 次攻击造成 136 伤害；击杀后 `won:true` |
 | 音频 | `ctxState:running`、8/8 解码、BGM + 4 类音效实际播出 |
-| 性能 | 常规 60fps（逻辑 0.04ms / 绘制 0.37ms）；240 粒子 + 300 飘字仍 60.4fps（绘制 0.62ms） |
-| 帧间一致性 | 所有剪辑最大像素差 0.057（阈值 0.22） |
+| 性能 | 常规 60fps（逻辑 0.05ms / 绘制 0.40ms）；240 粒子 + 300 飘字仍 60.4fps |
+| 帧间一致性 | 所有剪辑最大像素差 0.055（阈值 0.22） |
+| 动画帧数 | hero 41 → **66 帧**；敌人/Boss 各 41 → 54 帧（idle 8 / walk 12 / attack1 6…） |
+| 音效 | 起音时间 swing 375ms→**4.4ms**、hit 666ms→**1.0ms**；时长 1.0s→0.17s/0.24s |
+| 弓手 | 真实跑动中射出箭并命中：`shotEvents:2`、玩家 hp 111→95、播放 `sfx_bow` |
+| 镜头 | 阻尼跟随，150ms 内最大位移 0.08px（无跳变） |
 
 证据截图在 `art-source/evidence/`：`title.png`、`shot-combat.png`、`e2e-boss.png`、`e2e-win.png`、`contact-sheet.png`。
 

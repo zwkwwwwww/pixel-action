@@ -13,9 +13,9 @@ export const AI_PROFILES = {
     range: 30, depthRange: 16, cooldown: 110, attack: 'light2',
   },
   ranger: {
-    // 远程：保持距离，太近就后撤
+    // 远程：保持距离，对齐车道后放箭；太近就后撤
     type: 'ranged', speed: 0.72, turnSpeed: 1.0,
-    range: 130, minDist: 74, depthRange: 18, cooldown: 120, attack: 'light1',
+    range: 150, minDist: 78, depthRange: 16, cooldown: 96, attack: 'shoot',
   },
   boss: {
     type: 'melee', speed: 0.8, turnSpeed: 1.1,
@@ -51,6 +51,9 @@ export function enemyThink(world) {
         moveToward(e, e.x - Math.sign(dx) * 40, p.y, prof.speed, 0.5); // 后撤
       } else if (adx > prof.range) {
         moveToward(e, p.x, p.y, prof.speed, 0.6);
+      } else if (Math.abs(dy) > prof.depthRange) {
+        // 车道没对齐：先走到玩家那条车道，否则箭会擦身而过
+        moveToward(e, e.x, p.y, prof.speed, 1.0);
       } else if (e.aiTimer <= 0) {
         startAttack(e, prof.attack);
         e.aiTimer = prof.cooldown;

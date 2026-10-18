@@ -1,42 +1,44 @@
 [
   {
     "id": "sfx_swing",
-    "seconds": 1,
-    "file": "sfx_swing.mp3"
+    "file": "sfx_swing.wav",
+    "seconds": 0.17
   },
   {
     "id": "sfx_hit",
-    "seconds": 1,
-    "file": "sfx_hit.mp3"
+    "file": "sfx_hit.wav",
+    "seconds": 0.24
+  },
+  {
+    "id": "sfx_bow",
+    "file": "sfx_bow.wav",
+    "seconds": 0.22
   },
   {
     "id": "sfx_dodge",
-    "seconds": 1,
-    "file": "sfx_dodge.mp3"
-  },
-  {
-    "id": "sfx_special",
-    "seconds": 3,
-    "file": "sfx_special.mp3"
+    "file": "sfx_dodge.wav",
+    "seconds": 0.16
   },
   {
     "id": "sfx_death",
-    "seconds": 2,
-    "file": "sfx_death.mp3"
+    "file": "sfx_death.wav",
+    "seconds": 0.5
+  },
+  {
+    "id": "sfx_special",
+    "file": "sfx_special.wav",
+    "seconds": 0.9
   },
   {
     "id": "sfx_victory",
-    "seconds": 4,
     "file": "sfx_victory.mp3"
   },
   {
     "id": "bgm_battle",
-    "seconds": 32,
     "file": "bgm_battle.mp3"
   },
   {
     "id": "bgm_boss",
-    "seconds": 28,
     "file": "bgm_boss.mp3"
   }
 ]

@@ -13,7 +13,7 @@ export const AUDIO_STATE = {
   played: [],
 };
 
-const SFX = ['sfx_swing', 'sfx_hit', 'sfx_dodge', 'sfx_special', 'sfx_death', 'sfx_victory'];
+const SFX = ['sfx_swing', 'sfx_hit', 'sfx_bow', 'sfx_dodge', 'sfx_special', 'sfx_death', 'sfx_victory'];
 
 export async function initAudio() {
   if (AUDIO_STATE.ctx) return AUDIO_STATE;

@@ -19,6 +19,7 @@ for K in grunt brute ranger boss; do
   python tools/frame_diff.py --in "tmp/final-enemies/$K" \
     --json-out "art-source/reports/frame-diff-$K.json" --threshold 0.22 || echo "!! $K 帧间差超阈值（见报告）"
   python tools/pack_sprites.py --in "tmp/final-enemies/$K" --out assets/sprites --name "$K" \
-    --cell "$CELL" --anchor "$ANCHOR" --clips idle,walk,attack1,hurt,death
+    --cell "$CELL" --anchor "$ANCHOR" --clips idle,walk,attack1,hurt,death \
+    --fps-map idle=16,walk=24,attack1=21,hurt=21,death=10
 done
 echo "✓ 敌人精灵表完成"

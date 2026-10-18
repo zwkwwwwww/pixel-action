@@ -37,6 +37,7 @@ python tools/frame_diff.py --in "$FINAL" --json-out "art-source/reports/frame-di
 echo "== 4/4 打包精灵表"
 python tools/pack_sprites.py --in "$FINAL" --out assets/sprites --name "$NAME" \
   --cell "$CELL" --anchor "$ANCHOR" \
-  --clips idle,walk,attack1,attack2,attack3,dodge,hurt,death,special
+  --clips idle,walk,attack1,attack2,attack3,dodge,hurt,death,special \
+  --fps-map idle=16,walk=24,attack1=21,attack2=21,attack3=17,dodge=24,hurt=21,death=15,special=18
 
 echo "✓ 完成: assets/sprites/${NAME}.png"

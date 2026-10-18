@@ -46,7 +46,10 @@ PARTS: list[bpy.types.Object] = []
 def mat(name, rgb, rough=0.72, metal=0.0, spec=0.35):
     m = bpy.data.materials.new(name)
     m.use_nodes = True
-    bsdf = m.node_tree.nodes.get("Principled BSDF")
+    # 按类型找节点，别按名字找：中文界面下节点名是「原理化 BSDF」
+    bsdf = next((n for n in m.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+    if bsdf is None:
+        raise RuntimeError("material %s has no Principled BSDF" % name)
     bsdf.inputs["Base Color"].default_value = (*rgb, 1.0)
     bsdf.inputs["Roughness"].default_value = rough
     bsdf.inputs["Metallic"].default_value = metal
@@ -549,23 +552,63 @@ def clip_special():
     ]
 
 
+# --- 关键帧重采样 -----------------------------------------------------------
+# 原始剪辑是「一帧一个 pose」的稀疏动画（4~6 帧），在 60fps 的游戏里会明显一顿一顿。
+# 这里在相邻 pose 之间做线性插值，把帧数拉密；fps 按同比例抬高，保证动作总时长不变。
+# 循环剪辑（idle/walk）用环绕插值，避免首尾帧重复导致「卡一下」。
+def _lerp_pose(a, b, t):
+    out = {}
+    for bone_name in set(a) | set(b):
+        pa = a.get(bone_name, {})
+        pb = b.get(bone_name, {})
+        spec = {}
+        for key in set(pa) | set(pb):
+            va = pa.get(key, 0.0)
+            vb = pb.get(key, 0.0)
+            spec[key] = va + (vb - va) * t
+        out[bone_name] = spec
+    return out
+
+
+def resample_clip(poses, target, loop):
+    n = len(poses)
+    if target <= 0 or target == n:
+        return list(poses)
+    out = []
+    for i in range(target):
+        if loop:
+            u = i * n / target
+        else:
+            u = i * (n - 1) / (target - 1) if target > 1 else 0.0
+        i0 = int(math.floor(u)) % n
+        if loop:
+            i1 = (i0 + 1) % n
+        else:
+            i1 = min(i0 + 1, n - 1)
+        t = u - math.floor(u)
+        out.append(_lerp_pose(poses[i0], poses[i1], t))
+    return out
+
+
 CLIPS = [
-    # name, builder, fps, loop
-    ("idle", clip_idle, 8, True),
-    ("walk", clip_walk, 12, True),
-    ("attack1", clip_attack1, 14, False),
-    ("attack2", clip_attack2, 14, False),
-    ("attack3", clip_attack3, 12, False),
-    ("dodge", clip_dodge, 16, False),
-    ("hurt", clip_hurt, 14, False),
-    ("death", clip_death, 10, False),
-    ("special", clip_special, 12, False),
+    # name, builder, fps, loop, target_frames
+    ("idle", clip_idle, 8, True, 8),
+    ("walk", clip_walk, 12, True, 12),
+    ("attack1", clip_attack1, 14, False, 6),
+    ("attack2", clip_attack2, 14, False, 6),
+    ("attack3", clip_attack3, 12, False, 7),
+    ("dodge", clip_dodge, 16, False, 6),
+    ("hurt", clip_hurt, 14, False, 3),
+    ("death", clip_death, 10, False, 9),
+    ("special", clip_special, 12, False, 9),
 ]
 
 ad = ARM.animation_data_create()
 actions = {}
-for name, builder, fps, loop in CLIPS:
-    frames = builder()
+for name, builder, fps, loop, target in CLIPS:
+    raw = builder()
+    frames = resample_clip(raw, target, loop)
+    fps = round(fps * len(frames) / len(raw))
     ad.action = None
     for i, p in enumerate(frames, start=1):
         apply_pose(p)
@@ -588,10 +631,10 @@ for name, builder, fps, loop in CLIPS:
         print("frame range prop failed:", exc)
     actions[name] = act
     ad.action = None
-    print(f"action {name}: {len(frames)} frames @ {fps}fps")
+    print(f"action {name}: {len(raw)} -> {len(frames)} frames @ {fps}fps")
 
 # NLA storage (muted tracks; the active action still previews)
-for name, _b, _f, _l in CLIPS:
+for name, _b, _f, _l, _t in CLIPS:
     try:
         track = ad.nla_tracks.new()
         track.name = name
@@ -682,7 +725,7 @@ SCENE["art_contract"] = json.dumps({
     "render_size": [384, 384],
     "supersample": 4,
     "camera": {"yaw_deg": 12, "pitch_deg": 6, "ortho_scale": ORTHO_SCALE},
-    "clips": {n: {"frames": len(b()), "fps": f, "loop": l} for n, b, f, l in CLIPS},
+    "clips": {n: {"frames": len(resample_clip(b(), t, l)), "fps": round(f * len(resample_clip(b(), t, l)) / max(1, len(b()))), "loop": l} for n, b, f, l, t in CLIPS},
 })
 
 os.makedirs(os.path.dirname(OUT_BLEND), exist_ok=True)

@@ -51,10 +51,29 @@ assets/sprites/<name>.png + .json          # 游戏直接加载
 3. **cell 尺寸**：缩放后宽度超过 cell 立刻报错（不会静默裁掉武器）。
 4. **目视**：contact sheet + 游戏内截图，人眼判断剪影可读性。
 
+## 动画加帧（v2）
+
+原始动作是 4~6 帧的稀疏 pose（一帧一个姿势），60fps 下会明显一顿一顿。
+`tools/blender/build_hero.py` 与 `tools/blender/enemies/build_enemies.py` 现在会在相邻 pose 之间做
+**线性重采样**（循环剪辑用环绕插值 `u = i*n/target`，非循环用 `u = i*(n-1)/(target-1)` 保证首尾姿势不变），
+fps 按 `round(fps * newN/oldN)` 抬高 —— 动作总时长不变，采样密度翻倍。
+
+| 角色 | 帧数变化 |
+| --- | --- |
+| hero | 41 → 66（idle 4→8, walk 6→12, attack1/2 4→6, attack3 5→7, dodge 4→6, hurt 2→3, death 6→9, special 6→9） |
+| grunt/brute/ranger/boss | 41 → 54（只加 idle/walk/attack1/hurt，其余剪辑敌人不用，省重塑时间） |
+
+加帧只重跑「帧数变过」的剪辑（`tools/comfy/restyle-denser.sh` 先删对应目录再增量重塑）。
+
 ## 背景与音频
 
 - 背景：`node tools/comfy/backgrounds.mjs` → Z-Image-Turbo 1280×720 → 960×270、48 色量化。
-- 音频：`node tools/comfy/audio-batch.mjs` → ACE-Step 1.5 turbo（8 步 / cfg 1）→ mp3 + manifest。
+- **短音效：DSP 合成** `python tools/sfx-synth.py`。
+  为什么不用 ACE-Step 生成音效：它是音乐模型，输出天然带音高/调性/混响；实测旧版 `sfx_hit` 的起音时间是
+  666ms、`sfx_death` 峰值只有 0.011（几乎听不见）。动作游戏需要 80~250ms、attack < 5ms、干声、频段明确的声音，
+  用噪声整形 + 扫频 + 指数衰减包络合成，完全可复现且零生成耗时。
+- BGM：`node tools/comfy/audio-batch.mjs` → ACE-Step 1.5 turbo（8 步 / cfg 1）→ mp3。
+- 清单：`python tools/audio-manifest.py`；体检：`python tools/audio-analyze.py`（起音/质心/时长对比）。
 
 ## 已知限制
 
