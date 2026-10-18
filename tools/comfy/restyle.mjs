@@ -8,9 +8,12 @@
 //   node tools/comfy/restyle.mjs --in tmp/px-hero-384 --out tmp/restyled --prompt "..." \
 //        [--strength 0.8] [--denoise 0.55] [--seed 4242] [--res 384] [--only idle,walk]
 //
+// 断点续跑：只跳过「PNG 头部合法且尺寸与源帧一致」的产物；半截文件会重跑。
+// --batch N（N>1）目前被显式拒绝，原因见下方 BATCH 守卫（上游 control 只吃第 1 帧）。
+//
 // 产物：与输入同结构的 384×384 RGB PNG（alpha 由后续 compose_final.py 从 Blender 原帧取回）。
 import { readdir, mkdir, readFile } from 'node:fs/promises';
-import { existsSync } from 'node:fs';
+import { existsSync, openSync, readSync, closeSync, statSync } from 'node:fs';
 import { join, relative, dirname, extname } from 'node:path';
 import { runAndSave, uploadInput, ping, assertModels, COMFY } from './client.mjs';
 
@@ -32,6 +35,21 @@ const DENOISE = Number(opt('denoise', 0.55));
 const SEED = Number(opt('seed', 4242));
 const RES = Number(opt('res', 384));
 const ONLY = opt('only') ? new Set(opt('only').split(',')) : null;
+const BATCH = Number(opt('batch', 1)) || 1;
+
+// 批量提交目前是**不安全**的，直接拒绝而不是静默产出错帧：
+// comfy_extras/nodes_model_patch.py 的 ZImageControlPatch.prepare() 里写死了
+//     image = comfy.utils.common_upscale(self.image[:1].movedim(-1, 1), ...)
+// 即一次 prompt 里 ControlNet 只会用批次的第 1 帧；第 2..N 帧拿不到结构锁，
+// 腿/武器会漂移——正是这条管线要防的问题。等上游支持逐帧 control 再放开。
+if (BATCH > 1) {
+  console.error(
+    `拒绝执行 --batch ${BATCH}：本机 ComfyUI 的 ZImageControlPatch.prepare() 写死了 self.image[:1]，\n` +
+    `一次 prompt 内 ControlNet 只作用于第 1 帧，第 2..${BATCH} 帧会失去结构锁（帧间漂移）。\n` +
+    `详见 comfy_extras/nodes_model_patch.py:654。批量必须等上游支持逐帧 control。`,
+  );
+  process.exit(3);
+}
 
 function workflow(imageName, seed) {
   return {
@@ -67,10 +85,28 @@ async function walk(dir) {
   return out.sort();
 }
 
+/** 读 PNG 的 IHDR（宽/高/字节数）；不是完整可解码的 PNG 就返回 null。
+ *  用途：续跑时只跳过**真正完整**的产物，被 kill 掉的半截文件必须重跑。 */
+function pngInfo(p) {
+  try {
+    const bytes = statSync(p).size;
+    if (bytes < 1024) return null;
+    const fd = openSync(p, 'r');
+    const head = Buffer.alloc(24);
+    const n = readSync(fd, head, 0, 24, 0);
+    closeSync(fd);
+    if (n < 24) return null;
+    if (head.readUInt32BE(0) !== 0x89504e47 || head.readUInt32BE(4) !== 0x0d0a1a0a) return null;
+    if (head.toString('latin1', 12, 16) !== 'IHDR') return null;
+    return { w: head.readUInt32BE(16), h: head.readUInt32BE(20), bytes };
+  } catch { return null; }
+}
+
 async function main() {
   const t0 = Date.now();
   const stats = await ping();
-  console.log(`ComfyUI OK · VRAM ${Math.round((stats.system?.devices?.[0]?.vram_total ?? 0) / 1e6)}MB`);
+  const vram = stats.devices?.[0]?.vram_total ?? stats.system?.devices?.[0]?.vram_total ?? 0;
+  console.log(`ComfyUI OK · VRAM ${Math.round(vram / 1e6)}MB`);
   await assertModels([
     { type: 'unet', name: UNET }, { type: 'clip', name: CLIP },
     { type: 'vae', name: VAE }, { type: 'patch', name: PATCH },
@@ -87,7 +123,10 @@ async function main() {
     // --only 既接受角色目录名，也接受剪辑目录名（enemies/grunt/idle/...）
     if (ONLY && !ONLY.has(parts[0]) && !ONLY.has(parts[1])) continue;
     const dst = join(OUT, rel);
-    if (existsSync(dst)) { skipped++; continue; }
+    // 只跳过完整产物：解码头合法且尺寸与源帧一致；半截/损坏文件一律重跑
+    const srcInfo = pngInfo(f);
+    const dstInfo = pngInfo(dst);
+    if (dstInfo && srcInfo && dstInfo.w === srcInfo.w && dstInfo.h === srcInfo.h) { skipped++; continue; }
 
     // ComfyUI 的 LoadImage 不接受透明图：铺一层中灰再送进去（alpha 后面再贴回来）
     const { execFileSync } = await import('node:child_process');
@@ -107,7 +146,7 @@ bg.convert('RGB').save(sys.argv[2])
     // 同一剪辑共用一个种子：噪声相关，帧间更稳
     const res = await runAndSave(workflow(name, SEED), dst, { timeoutMs: 300000 });
     const ms = Date.now() - started;
-    timings.push({ file: rel, ms, bytes: res.bytes });
+    timings.push({ file: rel, ms, bytes: res.bytes, promptId: res.promptId });
     done++;
     console.log(`[${done}] ${rel}  ${ms}ms  ${res.bytes}B`);
   }

@@ -42,6 +42,14 @@
 - 新增脚本：`tools/sfx-synth.py`（音效合成）、`tools/audio-manifest.py`（重建清单）、
   `tools/audio-analyze.py`（音效客观指标对比）、`tools/comfy/restyle-denser.sh`（增量重塑）。
 
+## 第 3 轮：去掉红色线条（视觉清理）
+
+- 小怪/精英头顶那根**悬空红色血条**默认不再绘制（`SHOW_ENEMY_HP = false`）。
+  战斗反馈改由受击闪白、伤害飘字、硬直动作承担；Boss 仍保留屏幕底部血条。
+- 关卡闸门原来是**红色竖线**，改成冷色微光 + 1px 半透明竖线，保留「这里过不去」的提示但不再是红线。
+- 证据：`art-source/evidence/wave1-nored.png`、`phase3-archer.png`；像素级检测确认画面内已无 UI 红色横线/竖线
+  （仅剩角色红发与背景灯笼等美术元素）。
+
 ## 运行方式（已实测）
 
 | 用途 | 命令 |

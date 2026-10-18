@@ -217,6 +217,8 @@ function drawBlock(x, y, w, h, color, outline = '#0a0d12') {
 const ENEMY_COLORS = { grunt: '#5ec27a', brute: '#d08a3e', ranger: '#9b7bd8', boss: '#d2483f' };
 // 血条要挂在「精灵头顶」，用契约里的可见高度而不是方块尺寸
 const SPRITE_H = { hero: 56, grunt: 46, brute: 52, ranger: 48, boss: 112 };
+// 关掉小怪头顶那根悬空红线；想恢复改成 true
+const SHOW_ENEMY_HP = false;
 
 /** 确定性哈希：地面砖块的明暗不能用 Math.random（会每帧闪烁）。 */
 function hash2(a, b) {
@@ -343,14 +345,18 @@ function draw() {
     ctx.fillRect(0, Math.round(y), VIEW_W, 1);
   }
 
-  // 闸门（视觉上明确「这里过不去」）
+  // 闸门：保留「这里过不去」的视觉提示，但不再用红色竖线（改成冷色微光 + 地面暗边）
   if (level.gateX != null) {
     const gx = Math.round(level.gateX - cam);
     if (gx > -10 && gx < VIEW_W + 10) {
-      ctx.fillStyle = 'rgba(210,72,63,.22)';
-      ctx.fillRect(gx, GROUND_TOP - 90, 10, VIEW_H - GROUND_TOP + 90);
-      ctx.fillStyle = '#d2483f';
-      ctx.fillRect(gx + 3, GROUND_TOP - 90, 4, VIEW_H - GROUND_TOP + 90);
+      const grad = ctx.createLinearGradient(gx - 10, 0, gx + 10, 0);
+      grad.addColorStop(0, 'rgba(150,190,230,0)');
+      grad.addColorStop(0.5, 'rgba(150,190,230,.10)');
+      grad.addColorStop(1, 'rgba(150,190,230,0)');
+      ctx.fillStyle = grad;
+      ctx.fillRect(gx - 10, GROUND_TOP - 90, 20, VIEW_H - GROUND_TOP + 90);
+      ctx.fillStyle = 'rgba(180,210,240,.22)';
+      ctx.fillRect(gx, GROUND_TOP - 90, 1, VIEW_H - GROUND_TOP + 90);
     }
   }
 
@@ -418,8 +424,9 @@ function draw() {
       }
     }
 
-    // 血条（玩家不画，HUD 已经有了；画在头顶只会挡脸）
-    if (!a.dead && kind !== 'player') {
+    // 小怪/精英头顶的血条默认不画：一根悬空红线会打断像素画面，
+    // 战斗反馈改由受击闪白、伤害飘字、硬直动作承担；Boss 仍用屏幕底部血条。
+    if (SHOW_ENEMY_HP && !a.dead && kind !== 'player') {
       const w = a.kind === 'boss' ? 64 : 22;
       const bx = Math.round(sx - w / 2);
       const topH = SPRITE_H[a.kind] || (a.kind === 'boss' ? 112 : 48);
