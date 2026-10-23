@@ -11,7 +11,7 @@ $ErrorActionPreference = 'Stop'
 
 $root = 'E:\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI'
 $py   = Join-Path $root '.venv\Scripts\python.exe'
-$logDir = 'D:\DeepSeekHarness的工作区\pixel-action-logs'
+$logDir = 'D:\DeepSeekHarness Workspace\pixel-action-logs'
 $outLog = Join-Path $logDir 'comfy-manager.out.log'
 $errLog = Join-Path $logDir 'comfy-manager.err.log'
 

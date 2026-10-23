@@ -28,8 +28,14 @@ node tools/comfy/restyle.mjs --in "$SRC" --out "$RAW" \
 
 echo "== 2/5 压回像素网格 + 贴回 Blender alpha: $FINAL"
 rm -rf "$FINAL"
+# 有全局调色板就统一用它（跨 sprite 颜色一致）；没有则退回逐帧 32 色
+if [ -f art-source/palette.png ]; then
+  PAL_ARGS="--palette art-source/palette.png"
+else
+  PAL_ARGS="--colors 32"
+fi
 python tools/compose_final.py --restyled "$RAW" --alpha "$SRC" --out "$FINAL" \
-  --height "$HEIGHT" --cell "$CELL" --anchor "$ANCHOR" --colors 32 --ref "$SRC/idle/idle_00.png"
+  --height "$HEIGHT" --cell "$CELL" --anchor "$ANCHOR" $PAL_ARGS --ref "$SRC/idle/idle_00.png"
 
 echo "== 3/5 帧间一致性闸门（剪影交集 + 循环缝合判定）"
 python tools/frame_diff.py --in "$FINAL" --json-out "art-source/reports/frame-diff-${NAME}.json" \
@@ -39,9 +45,14 @@ echo "== 4/5 pivot 刚性闸门（后处理变换必须逐帧唯一）"
 python tools/pivot_drift.py --in "$FINAL" --json-out "art-source/reports/pivot-drift-${NAME}.json"
 
 echo "== 5/5 打包精灵表"
+# --skip walk=10：hero 的 09/10 两帧几乎是同一个双腿直立姿势，连续两帧 = 125ms 的"站立保持"，
+# 会造成视觉暂留（看起来像有个站直的人叠在上面）。丢掉 10，只保留一个过渡帧。
 python tools/pack_sprites.py --in "$FINAL" --out assets/sprites --name "$NAME" \
   --cell "$CELL" --anchor "$ANCHOR" \
   --clips idle,walk,attack1,attack2,attack3,dodge,hurt,death,special \
-  --fps-map idle=16,walk=24,attack1=21,attack2=21,attack3=17,dodge=24,hurt=21,death=15,special=18
+  --fps-map idle=16,walk=16,attack1=21,attack2=21,attack3=17,dodge=24,hurt=21,death=15,special=18 \
+  --skip walk=10
 
 echo "✓ 完成: assets/sprites/${NAME}.png"
+python tools/walk_gate.py --sheet "assets/sprites/${NAME}.json" \
+  --json-out "art-source/reports/walk-gate-${NAME}.json"

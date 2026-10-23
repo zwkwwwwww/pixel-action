@@ -48,7 +48,7 @@
       ]
     },
     "walk": {
-      "fps": 24,
+      "fps": 16,
       "loop": true,
       "frames": [
         [
@@ -179,5 +179,6 @@
         ]
       ]
     }
-  }
+  },
+  "version": "d99e6dbc5dd7"
 }

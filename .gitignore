@@ -42,6 +42,9 @@ art-source/evidence/*
 !art-source/reports/
 art-source/reports/*
 !art-source/reports/*.json
+# 全局调色板是跨 sprite 的唯一真源（改了它所有精灵都要重建），必须入库
+!art-source/palette.png
+!art-source/palette.json
 tmp/
 *.pyc
 __pycache__/

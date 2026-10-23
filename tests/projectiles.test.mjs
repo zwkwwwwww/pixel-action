@@ -95,3 +95,18 @@ test('箭命中后不会重复结算（同一支箭只打一次）', () => {
   // 承伤只允许来自后续新箭；同一支箭不能持续扣血
   assert.ok(w.player.hp >= hpAfter - ATTACKS.shoot.dmg, '同一支箭被重复结算了');
 });
+
+test('箭从弓中心（约 38px 高）射出，而不是脚底', () => {
+  const w = rangerWorld(200, 50);
+  let pr = null;
+  for (let i = 0; i < 200 && !pr; i++) {
+    step(w);
+    if (w.projectiles.length) pr = w.projectiles[0];
+  }
+  assert.ok(pr, '200 帧内没有射出箭');
+  assert.equal(pr.z, ATTACKS.shoot.projectile.offsetZ, '箭的离地高度应等于弓心高度');
+  assert.ok(pr.z >= 30 && pr.z <= 46, `弓心高度异常: ${pr.z}`);
+  // 横向只比身体中心偏一点点（弓在身体中心附近），不能是从远处凭空出现
+  assert.ok(Math.abs(pr.x - 200) <= 12, `出射点离弓手太远: ${Math.abs(pr.x - 200)}`);
+});
+

@@ -5,7 +5,25 @@ export const MAX_PARTICLES = 240;
 export const PARTICLE_GRAVITY = 0.34;
 
 export function createEffects() {
-  return { numbers: [], particles: [] };
+  return { numbers: [], particles: [], telegraphs: [] };
+}
+
+/**
+ * 地面预警圈：Boss 起手时在地面画一个随时间收缩的红圈，前摇结束瞬间爆发。
+ * 这是"可读性"设施——玩家必须能在大招落地前看到危险区域。
+ * @param {{x:number,y:number,r:number,life:number,color?:string}} cfg
+ */
+export function spawnTelegraph(fx, cfg) {
+  fx.telegraphs.push({
+    x: cfg.x,
+    y: cfg.y,
+    r0: cfg.r,
+    r1: cfg.r1 ?? cfg.r * 0.28,
+    age: 0,
+    life: cfg.life,
+    color: cfg.color || '#ff5a3c',
+  });
+  while (fx.telegraphs.length > 8) fx.telegraphs.shift();
 }
 
 function rnd(a, b) {
@@ -67,9 +85,14 @@ export function updateEffects(fx) {
     }
     if (p.age >= p.life) fx.particles.splice(i, 1);
   }
+  for (let i = fx.telegraphs.length - 1; i >= 0; i--) {
+    const t = fx.telegraphs[i];
+    t.age++;
+    if (t.age >= t.life) fx.telegraphs.splice(i, 1);
+  }
 }
 
 /** 特效是否需要继续推进（全空时可以跳过更新）。 */
 export function isEmpty(fx) {
-  return fx.numbers.length === 0 && fx.particles.length === 0;
+  return fx.numbers.length === 0 && fx.particles.length === 0 && fx.telegraphs.length === 0;
 }

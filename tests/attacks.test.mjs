@@ -60,3 +60,23 @@ test('必杀消耗能量且伤害最高', () => {
     assert.ok(ATTACKS.special.dmg > ATTACKS[id].dmg);
   }
 });
+
+// 视觉剑尖（从精灵表量测，单位：cell 像素，相对锚点）
+const VISUAL_REACH = { light1: 29, light2: 30, light3: 20, special: 29, slam: 67 };
+
+test('判定范围与剑的视觉长度对齐（不空挥、也不隔空命中）', () => {
+  for (const [id, vis] of Object.entries(VISUAL_REACH)) {
+    const r = ATTACKS[id].reach;
+    assert.ok(r >= vis - 6 && r <= vis + 2, `${id} reach=${r} 与视觉 ${vis} 偏差过大`);
+  }
+});
+
+test('必杀是双向判定（视觉上是横扫），普通攻击是单向', () => {
+  const sp = hitbox(ATTACKS.special, { x: 100, y: 40, facing: 1 });
+  assert.ok(sp.x1 < 100 && sp.x2 > 100, `必杀应覆盖身后: ${JSON.stringify(sp)}`);
+  const spL = hitbox(ATTACKS.special, { x: 100, y: 40, facing: -1 });
+  assert.ok(spL.x1 < 100 && spL.x2 > 100);
+
+  const l1 = hitbox(ATTACKS.light1, { x: 100, y: 40, facing: 1 });
+  assert.ok(l1.x1 >= 100, `普通攻击不应覆盖身后: ${JSON.stringify(l1)}`);
+});

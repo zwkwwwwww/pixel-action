@@ -7,7 +7,7 @@ export const ANIM = {
     idle: 'idle',
     walk: 'walk',
     attack: 'attack?', // 由 attack id 决定具体剪辑
-    dodge: 'dodge',
+    dodge: 'roll',     // 翻滚（逻辑状态名仍是 dodge，剪辑换成真正的翻滚动作）
     hurt: 'hurt',
     launched: 'hurt',  // 浮空暂时复用受击（没有专用浮空帧）
     down: 'hurt',
@@ -19,6 +19,7 @@ export const ANIM = {
     light2: 'attack2',
     light3: 'attack3',
     special: 'special',
+    shoot: 'shoot',   // 弓手拉弓（只有 ranger 有这套帧；缺失时回退 attack1）
   },
 };
 
@@ -26,7 +27,10 @@ export const ANIM = {
 export function clipForActor(actor, moving = false) {
   if (actor.dead || actor.state === 'dead') return 'death';
   if (actor.state === 'attack') return ANIM.ATTACK_CLIP[actor.attack] || 'attack1';
-  if (actor.state === 'idle') return moving ? 'walk' : 'idle';
+  if (actor.state === 'idle') {
+    if (moving) return 'walk';
+    return actor.aiming ? 'aim' : 'idle';   // 弓手在射程内保持拉弓
+  }
   return ANIM.STATE_CLIP[actor.state] || 'idle';
 }
 

@@ -6,8 +6,10 @@ export async function loadSprites(basePath) {
   const res = await fetch(`${basePath}.json`, { cache: 'no-cache' });
   if (!res.ok) throw new Error(`缺少精灵元数据 ${basePath}.json (HTTP ${res.status})`);
   const meta = await res.json();
+  // 用清单里的内容哈希做缓存键：素材重建后 URL 变化，浏览器不会继续用旧图
+  const version = meta.version ? `?v=${meta.version}` : '';
   const img = new Image();
-  img.src = new URL(`${basePath}.png`, location.href).href;
+  img.src = new URL(`${basePath}.png${version}`, location.href).href;
   await img.decode();
   return { meta, img };
 }

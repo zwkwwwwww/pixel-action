@@ -231,13 +231,15 @@ for side, tag, bone in ((-1, "R", "legR"), (1, "L", "legL")):
     hip = (0.0, 0.092 * side, 0.900)
     knee = (0.008, 0.098 * side, 0.475)
     ankle = (0.016, 0.100 * side, 0.130)
+    # 大腿绑 legR；膝盖以下绑 shinR（这样才有膝关节，能做真正的屈膝/团身）
+    shin_bone = "shin" + tag
     tube(f"thigh{tag}", hip, knee, 0.082, 0.058, 6, M_PANTS, bone)
-    ico(f"knee{tag}", knee, 0.058, (1.05, 0.95, 0.90), M_PANTS, bone, subdiv=1)
-    tube(f"shin{tag}", knee, ankle, 0.058, 0.042, 6, M_PANTS, bone)
+    ico(f"knee{tag}", knee, 0.058, (1.05, 0.95, 0.90), M_PANTS, shin_bone, subdiv=1)
+    tube(f"shin{tag}", knee, ankle, 0.058, 0.042, 6, M_PANTS, shin_bone)
     taper_box(f"boot{tag}", (0.050, 0.100 * side, 0.0), (0.020, 0.100 * side, 0.140),
-              0.105, 0.215, 0.098, 0.145, M_BOOT, bone)
+              0.105, 0.215, 0.098, 0.145, M_BOOT, shin_bone)
     taper_box(f"bootcuff{tag}", (0.016, 0.100 * side, 0.135), (0.014, 0.100 * side, 0.235),
-              0.100, 0.125, 0.115, 0.112, M_BOOT, bone)
+              0.100, 0.125, 0.115, 0.112, M_BOOT, shin_bone)
 
 # ----------------------------------------------------------------------------
 # sword  (built in the rest pose, blade pointing down-forward from the hand)
@@ -306,8 +308,11 @@ bone("spine", (0, 0, 1.025), (0, 0, 1.405), "hips", connect=True)
 bone("head", (0, 0, 1.405), (0, 0, 1.710), "spine", connect=True)
 bone("armR", (0, -0.198, 1.382), (0.026, -0.238, 1.018), "spine")
 bone("armL", (0, 0.198, 1.382), (0.026, 0.238, 1.018), "spine")
-bone("legR", (0, -0.092, 0.900), (0.016, -0.100, 0.130), "hips")
-bone("legL", (0, 0.092, 0.900), (0.016, 0.100, 0.130), "hips")
+bone("legR", (0, -0.092, 0.900), (0.008, -0.098, 0.475), "hips")
+bone("legL", (0, 0.092, 0.900), (0.008, 0.098, 0.475), "hips")
+# 小腿骨：膝盖 → 脚踝。有了它才能屈膝（团身/蹲伏），否则整条腿是刚性的。
+bone("shinR", (0.008, -0.098, 0.475), (0.016, -0.100, 0.130), "legR", connect=True)
+bone("shinL", (0.008, 0.098, 0.475), (0.016, 0.100, 0.130), "legL", connect=True)
 bone("weapon", tuple(HAND), tuple(HAND + U * 0.45), "armR")
 bpy.ops.object.mode_set(mode="OBJECT")
 ARM.show_in_front = True
@@ -394,11 +399,11 @@ def clip_idle():
     return [
         pose(),
         pose(hips={"tz": 0.012}, spine={"ry": 1.5}, head={"ry": -1.5},
-             armR={"ry": -2}, armL={"ry": 2}),
+             armR={"ry": -2}, armL={"ry": 2}, shinR={"ry": 2}, shinL={"ry": 2}),
         pose(hips={"tz": 0.004}, spine={"ry": 2.5}, head={"ry": -2.5},
-             armR={"ry": -3}, armL={"ry": 3}, weapon={"ry": 2}),
+             armR={"ry": -3}, armL={"ry": 3}, weapon={"ry": 2}, shinR={"ry": 3}, shinL={"ry": 1}),
         pose(hips={"tz": -0.004}, spine={"ry": 0.5}, head={"ry": -0.5},
-             armR={"ry": 2}, armL={"ry": -2}, weapon={"ry": -1}),
+             armR={"ry": 2}, armL={"ry": -2}, weapon={"ry": -1}, shinR={"ry": 1}, shinL={"ry": 3}),
     ]
 
 
@@ -407,22 +412,24 @@ def clip_walk():
     return [
         pose(hips={"tz": -0.022, "ty": 0.012}, spine={"ry": 7, "rz": 8},
              head={"ry": -6, "rz": -5}, legR={"ry": -38}, legL={"ry": 32},
+             shinR={"ry": 6}, shinL={"ry": 34},
              armR={"ry": 8}, armL={"ry": -24}, weapon={"ry": -8}),
         pose(hips={"tz": 0.012}, spine={"ry": 5, "rz": 3}, head={"ry": -4, "rz": -2},
-             legR={"ry": -16}, legL={"ry": 13}, armR={"ry": 4}, armL={"ry": -8},
-             weapon={"ry": -4}),
+             legR={"ry": -16}, legL={"ry": 13}, shinR={"ry": 4}, shinL={"ry": 16},
+             armR={"ry": 4}, armL={"ry": -8}, weapon={"ry": -4}),
         pose(hips={"tz": -0.008}, spine={"ry": 5, "rz": -3}, head={"ry": -4},
-             legR={"ry": 12}, legL={"ry": -12}, armR={"ry": -4}, armL={"ry": 8},
-             weapon={"ry": 4}),
+             legR={"ry": 12}, legL={"ry": -12}, shinR={"ry": 14}, shinL={"ry": 5},
+             armR={"ry": -4}, armL={"ry": 8}, weapon={"ry": 4}),
         pose(hips={"tz": -0.022, "ty": -0.012}, spine={"ry": 7, "rz": -8},
              head={"ry": -6, "rz": 5}, legR={"ry": 32}, legL={"ry": -38},
+             shinR={"ry": 34}, shinL={"ry": 6},
              armR={"ry": -8}, armL={"ry": 28}, weapon={"ry": 8}),
         pose(hips={"tz": 0.012}, spine={"ry": 5, "rz": -3}, head={"ry": -4, "rz": 2},
-             legR={"ry": 13}, legL={"ry": -16}, armR={"ry": -4}, armL={"ry": 10},
-             weapon={"ry": 4}),
+             legR={"ry": 13}, legL={"ry": -16}, shinR={"ry": 16}, shinL={"ry": 4},
+             armR={"ry": -4}, armL={"ry": 10}, weapon={"ry": 4}),
         pose(hips={"tz": -0.008}, spine={"ry": 5, "rz": 3}, head={"ry": -4},
-             legR={"ry": -12}, legL={"ry": 12}, armR={"ry": 4}, armL={"ry": -8},
-             weapon={"ry": -4}),
+             legR={"ry": -12}, legL={"ry": 12}, shinR={"ry": 5}, shinL={"ry": 16},
+             armR={"ry": 4}, armL={"ry": -8}, weapon={"ry": -4}),
     ]
 
 
@@ -493,6 +500,57 @@ def clip_dodge():
         pose(hips={"tz": -0.07}, spine={"ry": 12, "rz": 6}, head={"ry": -6},
              legR={"ry": -10}, legL={"ry": 8}, armR={"ry": 12}, armL={"ry": -8},
              root={"tx": -0.06}),
+    ]
+
+
+def clip_roll():
+    """向前翻滚：屈膝团身，绕腰部转完整一圈。
+
+    两个要点：
+      1. **绕 hips（z=0.90 腰高）转**，不是绕 root(原点) —— 后者会把角色甩出取景框。
+         hips 是 spine/legR/legL 的父节点，转 hips = 整个人绕腰翻。
+      2. **真屈膝**：legR 向后折（大腿抬起）+ shinR 向前折（小腿回收），
+         两条腿折成"Z"字才是团身；只折 legR 是"整条腿往后摆"，看着像劈叉。
+    10 帧 @ 29fps ≈ 0.34s，与 DODGE.total(22 帧 @60fps ≈ 0.37s) 对齐。
+    """
+    return [
+        # 1 起势：屈膝下沉，手臂前伸准备团身（0°）
+        pose(hips={"tz": -0.26, "ry": 0}, spine={"ry": 24}, head={"ry": 14},
+             legR={"ry": -46}, legL={"ry": -38},
+             shinR={"ry": 84}, shinL={"ry": 74},
+             armR={"ry": 26}, armL={"ry": -22}, root={"tx": 0.02}),
+        # 2 团身入滚（70°）：大腿抬起、小腿收到屁股，脊柱前倾
+        pose(hips={"tz": -0.10, "ry": 70}, spine={"ry": 46}, head={"ry": 34},
+             legR={"ry": -72}, legL={"ry": -62},
+             shinR={"ry": 118}, shinL={"ry": 104},
+             armR={"ry": 60, "rx": 18}, armL={"ry": -52, "rx": -12},
+             root={"tx": 0.12}),
+        # 3 倒立（160°）：完全团成球
+        pose(hips={"tz": 0.02, "ry": 160}, spine={"ry": 52}, head={"ry": 40},
+             legR={"ry": -80}, legL={"ry": -70},
+             shinR={"ry": 128}, shinL={"ry": 114},
+             armR={"ry": 66, "rx": 22}, armL={"ry": -58, "rx": -16},
+             root={"tx": 0.24}),
+        # 4 翻过顶（240°）
+        pose(hips={"tz": 0.00, "ry": 240}, spine={"ry": 50}, head={"ry": 38},
+             legR={"ry": -76}, legL={"ry": -66},
+             shinR={"ry": 124}, shinL={"ry": 110},
+             armR={"ry": 62, "rx": 20}, armL={"ry": -56, "rx": -14},
+             root={"tx": 0.36}),
+        # 5 下落（305°）：腿开始展开准备落地
+        pose(hips={"tz": -0.08, "ry": 305}, spine={"ry": 32}, head={"ry": 20},
+             legR={"ry": -52}, legL={"ry": -44},
+             shinR={"ry": 86}, shinL={"ry": 74},
+             armR={"ry": 38, "rx": 10}, armL={"ry": -32}, root={"tx": 0.50}),
+        # 6 落地屈膝缓冲（360°）：明显的深蹲
+        pose(hips={"tz": -0.22, "ry": 360}, spine={"ry": 24}, head={"ry": 10},
+             legR={"ry": -40}, legL={"ry": -34},
+             shinR={"ry": 72}, shinL={"ry": 62},
+             armR={"ry": 18, "rx": 6}, armL={"ry": -14}, root={"tx": 0.62}),
+        # 7 起身回到站姿
+        pose(hips={"tz": -0.04, "ry": 360}, spine={"ry": 6}, head={"ry": -2},
+             legR={"ry": -10}, legL={"ry": 6}, shinR={"ry": 18}, shinL={"ry": 10},
+             armR={"ry": 6}, armL={"ry": -4}, root={"tx": 0.70}),
     ]
 
 
@@ -598,6 +656,7 @@ CLIPS = [
     ("attack2", clip_attack2, 14, False, 6),
     ("attack3", clip_attack3, 12, False, 7),
     ("dodge", clip_dodge, 16, False, 6),
+    ("roll", clip_roll, 20, False, 10),
     ("hurt", clip_hurt, 14, False, 3),
     ("death", clip_death, 10, False, 9),
     ("special", clip_special, 12, False, 9),

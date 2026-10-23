@@ -1,0 +1,38 @@
+{
+  "dir": "tmp\\final-enemies\\grunt",
+  "composeJson": "tmp\\final-enemies\\grunt\\_compose.json",
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 2.74
+    },
+    "death": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 5.22
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 2.64
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.21
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 1.09
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

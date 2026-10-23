@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import wave
 from pathlib import Path
@@ -12,8 +13,10 @@ from pathlib import Path
 AUDIO_DIR = Path("assets/audio")
 # 顺序即加载顺序；游戏侧不依赖顺序
 IDS = [
-    "sfx_swing", "sfx_hit", "sfx_bow", "sfx_dodge", "sfx_death",
-    "sfx_special", "sfx_victory", "bgm_battle", "bgm_boss",
+    "sfx_hit", "sfx_hit_heavy", "sfx_hurt",
+    "sfx_bow", "sfx_dodge", "sfx_death", "sfx_special", "sfx_victory",
+    "sfx_jump", "sfx_knife", "sfx_pickup",
+    "bgm_battle", "bgm_boss",
 ]
 
 
@@ -39,6 +42,8 @@ def main() -> int:
             missing.append(audio_id)
             continue
         item = {"id": audio_id, "file": chosen.name}
+        # 内容版本号：音频重新生成后 URL 变化，浏览器不会继续用旧文件
+        item["version"] = hashlib.sha256(chosen.read_bytes()).hexdigest()[:12]
         d = duration(chosen)
         if d is not None:
             item["seconds"] = d

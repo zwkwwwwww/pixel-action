@@ -1,0 +1,74 @@
+{
+  "dir": "tmp\\final-enemies\\ranger",
+  "composeJson": "tmp\\final-enemies\\ranger\\_compose.json",
+  "clips": {
+    "aim": {
+      "frames": 2,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.05
+    },
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 3.32
+    },
+    "attack2": {
+      "frames": 4,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 2.9
+    },
+    "attack3": {
+      "frames": 5,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 1.75
+    },
+    "death": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 6.2
+    },
+    "dodge": {
+      "frames": 4,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 6.95
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 2.31
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.11
+    },
+    "shoot": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 1.74
+    },
+    "special": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 4.97
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.64
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

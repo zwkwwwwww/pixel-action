@@ -1,0 +1,38 @@
+{
+  "dir": "tmp\\final-enemies\\brute",
+  "composeJson": "tmp\\final-enemies\\brute\\_compose.json",
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 12.58
+    },
+    "death": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 9.84
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 4.6
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.76
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 6.66
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

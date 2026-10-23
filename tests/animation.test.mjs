@@ -17,7 +17,8 @@ test('三连击映射到三个攻击剪辑', () => {
 });
 
 test('闪避/受击/死亡状态各自映射', () => {
-  assert.equal(clipForActor(actor({ state: 'dodge' }), false), 'dodge');
+  // 闪避在画面上是翻滚动作（逻辑状态名仍是 dodge）
+  assert.equal(clipForActor(actor({ state: 'dodge' }), false), 'roll');
   assert.equal(clipForActor(actor({ state: 'hurt' }), false), 'hurt');
   assert.equal(clipForActor(actor({ state: 'dead', dead: true }), false), 'death');
 });
@@ -56,4 +57,9 @@ test('ANIM 常量给出逻辑帧率与状态→剪辑的完整映射', () => {
   for (const s of ['idle', 'walk', 'attack', 'dodge', 'hurt', 'launched', 'down', 'getup', 'dead']) {
     assert.ok(ANIM.STATE_CLIP[s], `缺少状态映射: ${s}`);
   }
+});
+
+test('弓手射击用专用 shoot 剪辑，而不是回退到 attack1', () => {
+  assert.equal(ANIM.ATTACK_CLIP.shoot, 'shoot');
+  assert.equal(clipForActor(actor({ state: 'attack', attack: 'shoot' })), 'shoot');
 });

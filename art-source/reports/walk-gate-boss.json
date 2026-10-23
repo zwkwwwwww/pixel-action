@@ -1,0 +1,22 @@
+{
+  "sheet": "assets\\sprites\\boss.json",
+  "clip": "walk",
+  "frames": 12,
+  "spreads": [
+    66,
+    55,
+    53,
+    63,
+    51,
+    64,
+    81,
+    67,
+    54,
+    64,
+    55,
+    53
+  ],
+  "threshold": 24,
+  "consecutiveStraightPairs": [],
+  "pass": true
+}

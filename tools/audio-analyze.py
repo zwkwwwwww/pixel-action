@@ -65,7 +65,7 @@ def measure(x: np.ndarray, sr: int) -> dict:
     }
 
 
-TARGETS = ["sfx_swing", "sfx_hit", "sfx_dodge", "sfx_death", "sfx_special"]
+TARGETS = ["sfx_hit", "sfx_hit_heavy", "sfx_hurt", "sfx_dodge", "sfx_death", "sfx_special"]
 
 
 def main() -> int:

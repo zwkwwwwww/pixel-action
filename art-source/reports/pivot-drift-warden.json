@@ -1,0 +1,38 @@
+{
+  "dir": "tmp\\final-enemies\\warden",
+  "composeJson": "tmp\\final-enemies\\warden\\_compose.json",
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 3.5
+    },
+    "death": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 8.7
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 5.6
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.04
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.21
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

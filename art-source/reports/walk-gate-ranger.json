@@ -1,0 +1,20 @@
+{
+  "sheet": "assets\\sprites\\ranger.json",
+  "clip": "walk",
+  "frames": 10,
+  "spreads": [
+    27,
+    21,
+    14,
+    19,
+    26,
+    34,
+    28,
+    20,
+    12,
+    20
+  ],
+  "threshold": 10,
+  "consecutiveStraightPairs": [],
+  "pass": true
+}

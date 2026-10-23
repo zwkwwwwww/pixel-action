@@ -1,0 +1,95 @@
+{
+  "dir": "tmp\\final-enemies\\berserker",
+  "threshold": 0.25,
+  "loopThreshold": 0.2,
+  "loopClips": [
+    "idle",
+    "walk"
+  ],
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "cellMax": 0.0525,
+      "maskMax": 0.1077,
+      "maskMean": 0.0864,
+      "perPairMask": [
+        0.0867,
+        0.0873,
+        0.1077,
+        0.0572,
+        0.0933
+      ],
+      "loopDiff": 0.1124,
+      "pass": true
+    },
+    "death": {
+      "frames": 6,
+      "cellMax": 0.0533,
+      "maskMax": 0.1894,
+      "maskMean": 0.1669,
+      "perPairMask": [
+        0.1823,
+        0.1894,
+        0.097,
+        0.1893,
+        0.1768
+      ],
+      "loopDiff": 0.2451,
+      "pass": true
+    },
+    "hurt": {
+      "frames": 3,
+      "cellMax": 0.044,
+      "maskMax": 0.1479,
+      "maskMean": 0.1456,
+      "perPairMask": [
+        0.1479,
+        0.1433
+      ],
+      "loopDiff": 0.2208,
+      "pass": true
+    },
+    "idle": {
+      "frames": 8,
+      "cellMax": 0.0063,
+      "maskMax": 0.0233,
+      "maskMean": 0.0205,
+      "perPairMask": [
+        0.0197,
+        0.0186,
+        0.0218,
+        0.0202,
+        0.0233,
+        0.0232,
+        0.0171
+      ],
+      "loopDiff": 0.0148,
+      "pass": true,
+      "loopPass": true
+    },
+    "walk": {
+      "frames": 12,
+      "cellMax": 0.0284,
+      "maskMax": 0.0821,
+      "maskMean": 0.0627,
+      "perPairMask": [
+        0.0821,
+        0.067,
+        0.0615,
+        0.0548,
+        0.0588,
+        0.0604,
+        0.0639,
+        0.0619,
+        0.0586,
+        0.054,
+        0.0665
+      ],
+      "loopDiff": 0.079,
+      "pass": true,
+      "loopPass": true
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

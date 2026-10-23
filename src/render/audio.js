@@ -13,7 +13,7 @@ export const AUDIO_STATE = {
   played: [],
 };
 
-const SFX = ['sfx_swing', 'sfx_hit', 'sfx_bow', 'sfx_dodge', 'sfx_special', 'sfx_death', 'sfx_victory'];
+const SFX = ['sfx_hit', 'sfx_hit_heavy', 'sfx_hurt', 'sfx_bow', 'sfx_dodge', 'sfx_special', 'sfx_death', 'sfx_victory'];
 
 export async function initAudio() {
   if (AUDIO_STATE.ctx) return AUDIO_STATE;
@@ -23,8 +23,17 @@ export async function initAudio() {
     const ctx = new Ctx();
     AUDIO_STATE.ctx = ctx;
     AUDIO_STATE.master = ctx.createGain();
-    AUDIO_STATE.master.gain.value = 0.55;
-    AUDIO_STATE.master.connect(ctx.destination);
+    AUDIO_STATE.master.gain.value = 0.6;
+    // 总线压缩：压住命中瞬间的峰值、抬高整体 RMS，打击感才"顶"得出来；
+    // 顺带让 BGM 在命中时轻微让位（pumping），动作游戏的常规做法。
+    const comp = ctx.createDynamicsCompressor();
+    comp.threshold.value = -16;
+    comp.knee.value = 10;
+    comp.ratio.value = 3;
+    comp.attack.value = 0.003;
+    comp.release.value = 0.15;
+    AUDIO_STATE.master.connect(comp);
+    comp.connect(ctx.destination);
 
     const manifest = await fetch('assets/audio/manifest.json', { cache: 'no-cache' }).then((r) => {
       if (!r.ok) throw new Error(`manifest ${r.status}`);
@@ -33,7 +42,9 @@ export async function initAudio() {
     AUDIO_STATE.total = manifest.length;
     await Promise.all(manifest.map(async (m) => {
       try {
-        const buf = await fetch(`assets/audio/${m.file}`).then((r) => {
+        // 清单里带内容哈希：音频重建后 URL 变化，浏览器不会继续用旧文件
+        const url = `assets/audio/${m.file}${m.version ? `?v=${m.version}` : ''}`;
+        const buf = await fetch(url).then((r) => {
           if (!r.ok) throw new Error(String(r.status));
           return r.arrayBuffer();
         });
@@ -97,7 +108,7 @@ export function stopBgm() {
 export function toggleMute() {
   const s = AUDIO_STATE;
   s.muted = !s.muted;
-  if (s.master) s.master.gain.value = s.muted ? 0 : 0.55;
+  if (s.master) s.master.gain.value = s.muted ? 0 : 0.6;
   return s.muted;
 }
 

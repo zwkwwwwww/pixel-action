@@ -1,0 +1,38 @@
+{
+  "dir": "tmp\\final-enemies\\boss",
+  "composeJson": "tmp\\final-enemies\\boss\\_compose.json",
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 10.06
+    },
+    "death": {
+      "frames": 6,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 13.91
+    },
+    "hurt": {
+      "frames": 3,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 4.57
+    },
+    "idle": {
+      "frames": 8,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 0.49
+    },
+    "walk": {
+      "frames": 12,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 6.96
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

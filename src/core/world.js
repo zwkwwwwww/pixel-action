@@ -1,16 +1,32 @@
 // 战斗世界：角色集合、输入意图、命中结算、命中停顿、事件流。
 // 这是「动作游戏手感」的唯一事实来源，渲染层只读它。
-import { ATTACKS, COMBO, isActive, hitbox, overlaps } from './attacks.js';
+import { ATTACKS, COMBO, BLADE_CARRIERS, isActive, hitbox, overlaps } from './attacks.js';
 import {
-  WORLD, createActor, canAct, startAttack, startDodge, bodyBox, updateActor,
+  WORLD, createActor, canAct, startAttack, startDodge, startJump, bodyBox, updateActor,
 } from './actor.js';
 import { InputBuffer } from './input.js';
+
+// 飞刀弹药上限（拾取不会超过这个数）
+const AMMO_MAX = 9;
 
 export { WORLD };
 
 export function createWorld({ player, enemies = [], enemyThink = null } = {}) {
-  const p = createActor({ side: 'player', hp: 120, maxHp: 120, ...player, side: 'player' });
-  const es = enemies.map((e) => createActor({ ...e, side: 'enemy' }));
+  const p = createActor({ side: 'player', hp: 240, maxHp: 240, ...player, side: 'player' });
+  // createActor 只认白名单字段，玩家专属资源要在生成后补挂
+  p.ammo = player.ammo ?? 5;
+  const es = enemies.map((e) => {
+    const a = createActor({ ...e, side: 'enemy' });
+    // createActor 只认白名单字段：Boss 的机制参数要在这里补挂，否则 AI 读不到
+    if (e.phases) { a.phases = e.phases; a.phase = e.phase || 0; }
+    if (e.attacks) a.attacks = e.attacks;
+    if (e.summonAt != null) a.summonAt = e.summonAt;
+    if (e.enrageAt != null) a.enrageAt = e.enrageAt;
+    if (e.kind === 'shield' || e.shield) a.shield = true;
+    // 飞行单位：悬空，近战够不到
+    if (e.kind === 'flyer' || e.flyer) { a.flyer = true; a.z = 34; }
+    return a;
+  });
   const world = {
     frame: 0,
     hitstop: 0,
@@ -51,16 +67,55 @@ export function forceAttack(world, actor, attackId) {
 
 function handleIntent(world) {
   const p = world.player;
+  // 闪避取消（新技能）：闪避中按攻击 → 立刻取消闪避并接上挑
+  if (p.state === 'dodge' && p.stateFrame >= 4 && world.buffer.consume('attack', world.frame, 6)) {
+    p.state = 'idle';
+    p.stateFrame = 0;
+    p.invuln = 0;
+    startAttack(p, 'light3');
+    return;
+  }
+  // 后摇取消（灵活性核心）：攻击判定结束后（recovery 段）按闪避 → 立刻翻滚打断
+  if (p.state === 'attack' && p.attack) {
+    const def = ATTACKS[p.attack];
+    const activeEnd = def.startup + def.active;
+    if (p.stateFrame >= activeEnd && world.buffer.consume('dodge', world.frame, 6)) {
+      p.state = 'idle';
+      p.stateFrame = 0;
+      p.attack = null;
+      p.hitTargets.clear();
+      startDodge(p, world.dir || { x: 0, y: 0 });
+      return;
+    }
+  }
   if (!canAct(p)) return;
   const dir = world.dir || { x: 0, y: 0 };
+  const airborne = p.state === 'jump' || p.z > 0.5;
 
-  // 方向移动（走路是自由状态，不受状态机切换）
+  // 方向移动：地面全速，空中打折（airControl），保留跳跃中的微调
   if (dir.x !== 0) p.facing = dir.x;
-  p.x += dir.x * p.speedX;
-  p.y = Math.max(0, Math.min(WORLD.DEPTH_MAX, p.y + dir.y * p.speedY));
+  const moveScale = airborne ? WORLD.JUMP.airControl : 1;
+  p.x += dir.x * p.speedX * moveScale;
+  p.y = Math.max(0, Math.min(WORLD.DEPTH_MAX, p.y + dir.y * p.speedY * moveScale));
 
+  // 跳跃 / 二段跳。放在闪避之后、攻击之前：跳起来还能马上出招
+  if (world.buffer.consume('jump', world.frame, 6)) {
+    startJump(p, dir);
+  }
+
+  // 远程道具：有弹药才能投；投完就不能再扔
+  if (world.buffer.consume('throw', world.frame, 6) && (p.ammo ?? 0) > 0) {
+    p.ammo = (p.ammo ?? 0) - 1;
+    startAttack(p, 'throw');
+    return;
+  }
   if (world.buffer.consume('dodge', world.frame, 6)) {
     startDodge(p, dir);
+    return;
+  }
+  // 蓄力重斩：按住攻击键够久后松手（窗口给 12 帧余量，松手晚一点也能吃到）
+  if (world.buffer.consume('heavy', world.frame, 12)) {
+    startAttack(p, 'heavy');
     return;
   }
   if (p.meter >= ATTACKS.special.meterCost && world.buffer.consume('special', world.frame, 6)) {
@@ -69,6 +124,31 @@ function handleIntent(world) {
     return;
   }
   if (world.buffer.consume('attack', world.frame, 6)) startAttack(p, 'light1');
+}
+
+/**
+ * Boss 起手预警：把带 telegraph 配置的招式，在起手帧推一条事件给渲染层。
+ * 只在敌人（side === 'enemy'）上生效——玩家自己的必杀不需要"敌人预警圈"。
+ */
+function emitTelegraphs(world) {
+  for (const a of world.actors) {
+    if (!a.justAttacked) continue;
+    const attackId = a.justAttacked;
+    a.justAttacked = null;
+    if (a.side !== 'enemy') continue;
+    const def = ATTACKS[attackId];
+    if (!def || !def.telegraph) continue;
+    const t = def.telegraph;
+    world.events.push({
+      type: 'telegraph',
+      uid: a.uid,
+      x: a.x + a.facing * (def.reach * 0.45),
+      y: a.y,
+      radius: t.radius,
+      color: t.color,
+      life: def.startup,
+    });
+  }
 }
 
 function resolveHits(world) {
@@ -83,6 +163,12 @@ function resolveHits(world) {
       if (a.hitTargets.has(b.uid)) continue;
       if (b.invuln > 0) continue;
       if (!overlaps(box, bodyBox(b))) continue;
+      // 高度判定：飞行单位悬在高空，地面攻击够不到；
+      // 玩家跳起来（z 升高）或用飞刀才能打到 —— 逼玩家用立体的打法
+      if (b.flyer) {
+        const reachZ = (a.z || 0) + 34;      // 近战有效高度
+        if ((b.z || 0) > reachZ) continue;
+      }
       applyHit(world, a, b, def);
     }
   }
@@ -91,7 +177,33 @@ function resolveHits(world) {
 function applyHit(world, attacker, target, def, opts = {}) {
   // 投射物没有 hitTargets（它命中也只结算一次就销毁），这里容忍缺省
   if (attacker.hitTargets) attacker.hitTargets.add(target.uid);
-  target.hp -= def.dmg;
+  // 空中追打：打中浮空中的敌人（launched）算"空连"，给额外能量并在事件里标记。
+  // 判定盒本身不看 z，所以地面攻击天然能摸到空中的敌人——这里只补奖励与反馈。
+  const airHit = target.state === 'launched' && target.z > 6;
+
+  // ——— 盾兵格挡 ———
+  // 玩家从**正面**打盾兵会被挡住（伤害 -80%），必须绕后或蓄力重斩破防。
+  // 判定：攻击者站在目标面朝的一侧 = 正面。重斩（heavy）和必杀（special）无视盾牌。
+  let blocked = false;
+  if (target.shield && !target.dead) {
+    const fromFront = Math.sign(attacker.x - target.x) === target.facing;
+    const breaksGuard = def.dmg >= 20 || def.launch > 0;
+    // 破防：正面吃重击/上挑 → 盾牌被打开，进入 guardBreak 窗口
+    // （期间不再格挡，也不会立刻举盾），持续 90 帧 ≈ 1.5s，够打完一轮连段
+    if (target.guardBreak > 0) {
+      blocked = false;
+    } else if (fromFront && breaksGuard) {
+      blocked = false;
+      target.guardBreak = 90;
+      world.events.push({
+        type: 'guardBreak', uid: target.uid, x: target.x, y: target.y,
+      });
+    } else if (fromFront) {
+      blocked = true;
+    }
+  }
+  const appliedDmg = blocked ? Math.max(1, Math.round(def.dmg * 0.2)) : def.dmg;
+  target.hp -= appliedDmg;
   target.hurtTime = def.hitstun;
   target.stateFrame = 0;
   target.vx = def.kbX * attacker.facing;
@@ -116,7 +228,19 @@ function applyHit(world, attacker, target, def, opts = {}) {
 
   if (attacker.side === 'player') {
     attacker.meter = Math.min(WORLD.MAX_METER, attacker.meter + (def.meterGain || 0));
+    // 空连额外回能：奖励"把敌人挑起来继续打"
+    if (airHit) {
+      attacker.meter = Math.min(WORLD.MAX_METER, attacker.meter + 4);
+      // 空中追打不落地，保持浮空节奏（轻微上顶）
+      target.vz = Math.max(target.vz, 1.6);
+    }
   }
+  // 击杀掉落：持刀敌人死后掉一把飞刀，形成「打->补弹」的资源循环
+  if (target.dead && attacker.side === 'player' && BLADE_CARRIERS.has(target.kind)) {
+    attacker.ammo = Math.min(AMMO_MAX, (attacker.ammo ?? 0) + 1);
+    world.events.push({ type: 'pickup', uid: attacker.uid, x: target.x, y: target.y, ammo: attacker.ammo });
+  }
+
   // 命中停顿：只冻结模拟，不冻结玩家输入（输入照常进缓冲）
   world.hitstop = Math.min(10, Math.max(world.hitstop, 6));
 
@@ -125,10 +249,15 @@ function applyHit(world, attacker, target, def, opts = {}) {
     attacker: attacker.uid,
     uid: target.uid,
     attack: attacker.attack,
-    dmg: def.dmg,
+    attackerSide: attacker.side,
+    targetSide: target.side,
+    targetKind: target.kind,
+    dmg: appliedDmg,
+    blocked,
     x: target.x,
     y: target.y,
     z: target.z,
+    airHit,
     launch: def.launch,
     killed: target.dead,
     meter: attacker.meter,
@@ -154,6 +283,7 @@ function spawnProjectiles(world) {
       side: a.side,
       x: a.x + a.facing * (pr.offsetX ?? 12),
       y: a.y,
+      z: pr.offsetZ ?? 0,   // 离地高度：箭从弓心（约 38px）射出，而不是脚底
       vx: a.facing * pr.speed,
       dmg: def.dmg,
       hitstun: def.hitstun,
@@ -185,6 +315,7 @@ function updateProjectiles(world) {
     for (const t of world.actors) {
       if (t.side === pr.side || t.dead || t.invuln > 0) continue;
       if (!overlaps(box, bodyBox(t))) continue;
+      // 投射物不受高度限制：飞刀/箭能打到空中的飞行单位
       applyHit(
         world,
         { uid: pr.ownerUid, side: pr.side, facing: Math.sign(pr.vx) || 1, meter: 0, attack: pr.attack },
@@ -210,6 +341,7 @@ export function step(world) {
   handleIntent(world);
   if (world.enemyThink) world.enemyThink(world);
   for (const a of world.actors) updateActor(a);
+  emitTelegraphs(world);
   spawnProjectiles(world);
   updateProjectiles(world);
   resolveHits(world);

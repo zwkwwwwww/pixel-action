@@ -14,6 +14,8 @@ export const GATE_MARGIN = 4;     // 边界相对屏幕右缘的余量（只留 
 export const LOCK_LEAD = 216;     // 锁定机位 = 触发点 - 0.45 屏（与跟随公式一致）
 
 export const LEVEL = {
+  id: 1,
+  name: 'RUSTED STREET',
   worldW: 3200,
   viewW: VIEW_W,
   gateMargin: GATE_MARGIN,
@@ -48,6 +50,8 @@ export const LEVEL = {
     spawn: {
       kind: 'boss', x: 2170, y: 41, hp: 420, maxHp: 420,
       speedX: 0.8, speedY: 0.6, bodyHalfW: 20, bodyHalfD: 15,
+      // 教学 Boss 也给一个基础阶段：半血后稍微加快，让玩家学会看阶段刻度
+      phases: [{ at: 0.5, speed: 1.2, cooldown: 0.8 }],
     },
   },
 };
@@ -70,8 +74,17 @@ function spawn(world, cfg) {
   const actor = createActor({
     side: 'enemy',
     ...cfg,
-    ai: AI_PROFILES[cfg.kind] || AI_PROFILES.grunt,
+    ai: cfg.ai || AI_PROFILES[cfg.kind] || AI_PROFILES.grunt,
   });
+  // Boss 机制字段：createActor 只认白名单字段，机制参数要在生成后补挂
+  if (cfg.attacks) actor.attacks = cfg.attacks;
+  if (cfg.summonAt != null) actor.summonAt = cfg.summonAt;
+  if (cfg.enrageAt != null) actor.enrageAt = cfg.enrageAt;
+  // Boss 阶段表（血条分段机制）
+  if (cfg.phases) { actor.phases = cfg.phases; actor.phase = 0; }
+  // 盾兵：正面格挡（伤害 -80%），绕后或重斩才能破
+  if (cfg.kind === 'shield' || cfg.shield) actor.shield = true;
+  if (cfg.kind === 'flyer' || cfg.flyer) { actor.flyer = true; actor.z = 34; }
   world.enemies.push(actor);
   world.actors.push(actor);
   return actor;
@@ -131,6 +144,18 @@ export function updateLevel(world, lv, camX) {
     lv.gateX = null;
     lv.camLockX = null;
     lv.segmentIndex++;
+    // 清完一波给喘息奖励：补 1 把飞刀 + 回一点血，
+    // 让「打不过就硬扛」变成「稳住节奏就有资源」，减少纯消耗战
+    const pl = world.player;
+    if (pl && !pl.dead) {
+      pl.ammo = Math.min(9, (pl.ammo || 0) + 1);
+      const heal = Math.round(pl.maxHp * 0.08);
+      pl.hp = Math.min(pl.maxHp, pl.hp + heal);
+      world.events.push({
+        type: 'waveClear', x: pl.x, y: pl.y, heal, ammo: pl.ammo,
+        wave: lv.segmentIndex, total: lv.def.segments.length,
+      });
+    }
   }
 
   // 最后一波清完 → Boss 登场（同样把屏幕右缘当战场边界）
@@ -152,3 +177,5 @@ export function cameraLimit(lv) {
   const viewW = lv.def.viewW ?? VIEW_W;
   return lv.camLockX == null ? lv.def.worldW : lv.camLockX + viewW;
 }
+
+

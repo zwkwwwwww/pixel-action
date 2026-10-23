@@ -49,6 +49,9 @@ CLIPS = {
     "hurt": (2, 14, False),
     "death": (6, 10, False),
     "special": (6, 12, False),
+    # 弓手专用（只有 ranger 的 .blend 里有这个 action，渲染时用 --clips 限定）
+    "aim": (2, 6, True),
+    "shoot": (6, 17, False),
 }
 
 

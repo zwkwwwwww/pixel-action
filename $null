@@ -1,0 +1,2 @@
+usage: sfx-synth.py [-h] [--out OUT] [--keep-mp3]
+sfx-synth.py: error: unrecognized arguments: ; python tmp/_hitsnd.py assets/audio/sfx_hit.wav

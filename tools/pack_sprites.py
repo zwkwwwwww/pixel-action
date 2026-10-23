@@ -51,6 +51,9 @@ def main() -> int:
     ap.add_argument("--clips", default=",".join(CLIP_META.keys()))
     ap.add_argument("--expect", default="", help="可选: idle=4,walk=6 强制校验帧数")
     ap.add_argument("--fps-map", default="", help="可选: idle=16,walk=24 覆盖每剪辑播放帧率")
+    ap.add_argument("--skip", default="",
+                    help="可选: walk=10 或 walk=3|10（逗号分隔多个剪辑，竖线分隔帧号）—— 丢掉某些帧。"
+                         "用于抑制「连续两帧双腿直立」造成的视觉暂留（直立姿势被保持两帧 = 125ms）")
     args = ap.parse_args()
 
     inp = Path(args.inp)
@@ -67,6 +70,11 @@ def main() -> int:
         for pair in args.expect.split(","):
             k, v = pair.split("=")
             expect[k.strip()] = int(v)
+    skip = {}
+    if args.skip:
+        for pair in args.skip.split(","):
+            k, v = pair.split("=")
+            skip[k.strip()] = {int(x) for x in v.split("|") if x.strip()}
 
     rows = []
     meta = {"image": f"{args.name}.png", "cell": list(cell), "anchor": list(anchor), "clips": {}}
@@ -84,6 +92,14 @@ def main() -> int:
         if idx != list(range(len(files))):
             print(f"错误: {clip} 帧号不连续: {idx}", file=sys.stderr)
             return 2
+        # 连续性在「完整帧集」上校验完，再按 --skip 丢掉指定帧（不重排、不改名）
+        if clip in skip:
+            dropped = [files[i].name for i in sorted(skip[clip]) if 0 <= i < len(files)]
+            files = [f for i, f in enumerate(files) if i not in skip[clip]]
+            if not files:
+                print(f"错误: {clip} 跳帧后没有剩余帧", file=sys.stderr)
+                return 2
+            print(f"[skip] {clip}: 丢掉 {dropped}，剩 {len(files)} 帧", file=sys.stderr)
         if clip in expect and len(files) != expect[clip]:
             print(f"错误: {clip} 期望 {expect[clip]} 帧，实际 {len(files)} 帧", file=sys.stderr)
             return 2
@@ -111,11 +127,16 @@ def main() -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     sheet.save(out / f"{args.name}.png")
+    # 内容版本号：让游戏加载 PNG 时带 ?v=<hash>，重建后浏览器不会继续用旧图
+    import hashlib
+    version = hashlib.sha256((out / f"{args.name}.png").read_bytes()).hexdigest()[:12]
+    meta["version"] = version
     (out / f"{args.name}.json").write_text(json.dumps(meta, indent=2), encoding="utf-8")
 
     print(json.dumps({
         "sheet": str(out / f"{args.name}.png"),
         "json": str(out / f"{args.name}.json"),
+        "version": version,
         "cell": list(cell), "cols": max_cols, "rows": len(rows),
         "clips": {c: len(f) for c, f in rows},
         "bytes": (out / f"{args.name}.png").stat().st_size,

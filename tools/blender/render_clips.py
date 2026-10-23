@@ -39,6 +39,7 @@ CLIPS = {
     "attack2": (4, 14, False),
     "attack3": (5, 12, False),
     "dodge": (4, 16, False),
+    "roll": (8, 20, False),
     "hurt": (2, 14, False),
     "death": (6, 10, False),
     "special": (6, 12, False),

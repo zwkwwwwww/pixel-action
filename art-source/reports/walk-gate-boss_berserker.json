@@ -1,0 +1,22 @@
+{
+  "sheet": "assets\\sprites\\boss_berserker.json",
+  "clip": "walk",
+  "frames": 12,
+  "spreads": [
+    59,
+    45,
+    29,
+    28,
+    50,
+    66,
+    80,
+    68,
+    53,
+    32,
+    24,
+    45
+  ],
+  "threshold": 24,
+  "consecutiveStraightPairs": [],
+  "pass": true
+}

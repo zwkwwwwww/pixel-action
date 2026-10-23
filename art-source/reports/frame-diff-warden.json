@@ -1,0 +1,95 @@
+{
+  "dir": "tmp\\final-enemies\\warden",
+  "threshold": 0.25,
+  "loopThreshold": 0.2,
+  "loopClips": [
+    "idle",
+    "walk"
+  ],
+  "clips": {
+    "attack1": {
+      "frames": 6,
+      "cellMax": 0.0259,
+      "maskMax": 0.0699,
+      "maskMean": 0.062,
+      "perPairMask": [
+        0.0627,
+        0.0699,
+        0.0678,
+        0.0414,
+        0.068
+      ],
+      "loopDiff": 0.0788,
+      "pass": true
+    },
+    "death": {
+      "frames": 6,
+      "cellMax": 0.0354,
+      "maskMax": 0.0973,
+      "maskMean": 0.079,
+      "perPairMask": [
+        0.0973,
+        0.0882,
+        0.0757,
+        0.0723,
+        0.0613
+      ],
+      "loopDiff": 0.059,
+      "pass": true
+    },
+    "hurt": {
+      "frames": 3,
+      "cellMax": 0.0257,
+      "maskMax": 0.0821,
+      "maskMean": 0.0793,
+      "perPairMask": [
+        0.0765,
+        0.0821
+      ],
+      "loopDiff": 0.0909,
+      "pass": true
+    },
+    "idle": {
+      "frames": 8,
+      "cellMax": 0.0046,
+      "maskMax": 0.0295,
+      "maskMean": 0.0207,
+      "perPairMask": [
+        0.0214,
+        0.0212,
+        0.0227,
+        0.0158,
+        0.0295,
+        0.021,
+        0.0133
+      ],
+      "loopDiff": 0.0185,
+      "pass": true,
+      "loopPass": true
+    },
+    "walk": {
+      "frames": 12,
+      "cellMax": 0.0133,
+      "maskMax": 0.0465,
+      "maskMean": 0.0409,
+      "perPairMask": [
+        0.045,
+        0.0416,
+        0.0399,
+        0.038,
+        0.0359,
+        0.039,
+        0.0465,
+        0.0444,
+        0.0375,
+        0.0397,
+        0.0421
+      ],
+      "loopDiff": 0.041,
+      "pass": true,
+      "loopPass": true
+    }
+  },
+  "failedClips": [],
+  "pass": true
+}

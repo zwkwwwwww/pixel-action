@@ -35,7 +35,7 @@ export async function queue(workflow, clientId = 'dsh-pixel-action') {
   return j.prompt_id;
 }
 
-export async function waitFor(promptId, { timeoutMs = 300000, pollMs = 700 } = {}) {
+export async function waitFor(promptId, { timeoutMs = Number(process.env.COMFY_TIMEOUT_MS || 600000), pollMs = 700 } = {}) {
   const t0 = Date.now();
   while (Date.now() - t0 < timeoutMs) {
     const r = await fetch(`${COMFY}/history/${promptId}`);

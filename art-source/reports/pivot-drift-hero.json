@@ -1,6 +1,6 @@
 {
-  "dir": "tmp\\final-hero-v2",
-  "composeJson": "tmp\\final-hero-v2\\_compose.json",
+  "dir": "tmp\\final-hero",
+  "composeJson": "tmp\\final-hero\\_compose.json",
   "clips": {
     "attack1": {
       "frames": 6,
@@ -42,7 +42,13 @@
       "frames": 8,
       "uniqueTransforms": 1,
       "pass": true,
-      "legAxisSpreadPx": 0.15
+      "legAxisSpreadPx": 0.2
+    },
+    "roll": {
+      "frames": 10,
+      "uniqueTransforms": 1,
+      "pass": true,
+      "legAxisSpreadPx": 25.82
     },
     "special": {
       "frames": 9,
@@ -54,7 +60,7 @@
       "frames": 12,
       "uniqueTransforms": 1,
       "pass": true,
-      "legAxisSpreadPx": 0.81
+      "legAxisSpreadPx": 0.62
     }
   },
   "failedClips": [],

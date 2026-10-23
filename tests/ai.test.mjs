@@ -80,3 +80,25 @@ test('敌人不会走到玩家身后的纵深之外（车道夹紧）', () => {
   for (let i = 0; i < 120; i++) step(w);
   assert.ok(e.y >= 0 && e.y <= 82, `纵深越界: ${e.y}`);
 });
+
+test('弓手在射程内一直举弓，离开射程才放下', () => {
+  // 射程内（ranger range 150 / minDist 78）：举弓
+  const inRange = setup('ranger', 220, 50);
+  const er = inRange.enemies[0];
+  er.aiTimer = 30;                       // 冷却中，不应出招
+  step(inRange);
+  assert.equal(er.aiming, true, '射程内应保持拉弓');
+  assert.equal(er.state, 'idle', '冷却中不应出招');
+
+  // 太远：放下
+  const far = setup('ranger', 600, 50);
+  const ef = far.enemies[0];
+  step(far);
+  assert.equal(ef.aiming, false, '超出射程应放下弓');
+
+  // 太近：后撤时不举弓
+  const close = setup('ranger', 118, 50);
+  const ec = close.enemies[0];
+  step(close);
+  assert.equal(ec.aiming, false, '贴脸后撤时不应保持拉弓');
+});

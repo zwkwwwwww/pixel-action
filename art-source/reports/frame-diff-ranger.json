@@ -1,81 +1,174 @@
 {
   "dir": "tmp\\final-enemies\\ranger",
-  "threshold": 0.22,
+  "threshold": 0.25,
+  "loopThreshold": 0.2,
+  "loopClips": [
+    "idle",
+    "walk"
+  ],
   "clips": {
+    "aim": {
+      "frames": 2,
+      "cellMax": 0.0036,
+      "maskMax": 0.0424,
+      "maskMean": 0.0424,
+      "perPairMask": [
+        0.0424
+      ],
+      "loopDiff": 0.0424,
+      "pass": true
+    },
     "attack1": {
       "frames": 6,
-      "max": 0.024,
-      "mean": 0.0197,
-      "perPair": [
-        0.0222,
-        0.024,
-        0.024,
-        0.0127,
-        0.0157
+      "cellMax": 0.0195,
+      "maskMax": 0.1038,
+      "maskMean": 0.0816,
+      "perPairMask": [
+        0.0733,
+        0.0918,
+        0.0856,
+        0.0536,
+        0.1038
       ],
-      "loopDiff": 0.0179,
+      "loopDiff": 0.1127,
+      "pass": true
+    },
+    "attack2": {
+      "frames": 4,
+      "cellMax": 0.0166,
+      "maskMax": 0.1159,
+      "maskMean": 0.1028,
+      "perPairMask": [
+        0.0987,
+        0.0937,
+        0.1159
+      ],
+      "loopDiff": 0.1188,
+      "pass": true
+    },
+    "attack3": {
+      "frames": 5,
+      "cellMax": 0.0223,
+      "maskMax": 0.124,
+      "maskMean": 0.1011,
+      "perPairMask": [
+        0.0984,
+        0.124,
+        0.097,
+        0.0849
+      ],
+      "loopDiff": 0.1462,
       "pass": true
     },
     "death": {
       "frames": 6,
-      "max": 0.0219,
-      "mean": 0.0182,
-      "perPair": [
-        0.0146,
-        0.0208,
-        0.0219,
-        0.0164,
-        0.0172
+      "cellMax": 0.0228,
+      "maskMax": 0.1328,
+      "maskMean": 0.1155,
+      "perPairMask": [
+        0.1195,
+        0.1328,
+        0.1112,
+        0.1078,
+        0.106
       ],
-      "loopDiff": 0.0285,
+      "loopDiff": 0.1551,
+      "pass": true
+    },
+    "dodge": {
+      "frames": 4,
+      "cellMax": 0.0273,
+      "maskMax": 0.1331,
+      "maskMean": 0.1155,
+      "perPairMask": [
+        0.1331,
+        0.0944,
+        0.1189
+      ],
+      "loopDiff": 0.0643,
       "pass": true
     },
     "hurt": {
       "frames": 3,
-      "max": 0.0149,
-      "mean": 0.0143,
-      "perPair": [
-        0.0149,
-        0.0137
+      "cellMax": 0.0188,
+      "maskMax": 0.1211,
+      "maskMean": 0.1153,
+      "perPairMask": [
+        0.1095,
+        0.1211
       ],
-      "loopDiff": 0.0192,
+      "loopDiff": 0.1197,
       "pass": true
     },
     "idle": {
       "frames": 8,
-      "max": 0.0076,
-      "mean": 0.0037,
-      "perPair": [
-        0.0021,
-        0.0027,
-        0.0024,
-        0.0076,
-        0.006,
-        0.003,
-        0.0023
+      "cellMax": 0.0037,
+      "maskMax": 0.0526,
+      "maskMean": 0.0333,
+      "perPairMask": [
+        0.0309,
+        0.0268,
+        0.0236,
+        0.0227,
+        0.042,
+        0.0526,
+        0.0347
       ],
-      "loopDiff": 0.0025,
+      "loopDiff": 0.0262,
+      "pass": true,
+      "loopPass": true
+    },
+    "shoot": {
+      "frames": 6,
+      "cellMax": 0.0134,
+      "maskMax": 0.0892,
+      "maskMean": 0.0733,
+      "perPairMask": [
+        0.0733,
+        0.0739,
+        0.0602,
+        0.0892,
+        0.0702
+      ],
+      "loopDiff": 0.0918,
+      "pass": true
+    },
+    "special": {
+      "frames": 6,
+      "cellMax": 0.0288,
+      "maskMax": 0.1323,
+      "maskMean": 0.1097,
+      "perPairMask": [
+        0.1179,
+        0.1107,
+        0.085,
+        0.1323,
+        0.1027
+      ],
+      "loopDiff": 0.1106,
       "pass": true
     },
     "walk": {
       "frames": 12,
-      "max": 0.0153,
-      "mean": 0.0128,
-      "perPair": [
-        0.0144,
-        0.014,
-        0.008,
-        0.0131,
-        0.015,
-        0.0127,
-        0.0129,
-        0.0139,
-        0.0153,
-        0.0072,
-        0.0141
+      "cellMax": 0.0142,
+      "maskMax": 0.0904,
+      "maskMean": 0.0685,
+      "perPairMask": [
+        0.0904,
+        0.0777,
+        0.0765,
+        0.0664,
+        0.0563,
+        0.0528,
+        0.0551,
+        0.0555,
+        0.0684,
+        0.0757,
+        0.0782
       ],
-      "loopDiff": 0.017,
-      "pass": true
+      "loopDiff": 0.0932,
+      "pass": true,
+      "loopPass": true
     }
   },
   "failedClips": [],

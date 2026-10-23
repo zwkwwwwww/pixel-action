@@ -24,6 +24,11 @@ const ITEMS = [
     prompt: `${STYLE}, vast ruined plaza before a colossal clock tower, cracked stone floor, floating embers, blood moon, chains and banners, ominous teal and crimson palette, wide shot, empty arena`,
   },
   {
+    id: 'bg_stage2',
+    seed: 7404,
+    prompt: `${STYLE}, abandoned iron foundry interior at night, huge gears and rusted catwalks, molten metal channels glowing orange, hanging chains, broken furnaces, teal moonlight through broken roof, wet iron floor, wide shot, empty arena`,
+  },
+  {
     id: 'bg_title',
     seed: 7303,
     prompt: `${STYLE}, panoramic ruined city skyline under a huge rusted moon, ruined spires, drifting ash, deep blue and amber, epic key visual, no characters, wide shot`,

@@ -289,6 +289,43 @@ def clip_idle():
     ]
 
 
+def _retarget_bow(poses, keep=1.0, tilt=-6.0):
+    """把「弓跟着手臂甩」改成「弓保持大致竖直、微微前倾（弓腹朝目标）」。
+
+    weapon 是 armR 的子骨，所以 weapon.ry 必须**反向**抵消 armR.ry；
+    keep 控制抵消比例（1.0 = 完全抵消），tilt 是要保留的固定前倾角。
+    """
+    out = []
+    for p in poses:
+        q = {k: dict(v) for k, v in p.items()}
+        arm = q.get("armR", {}).get("ry", 0.0)
+        w = q.setdefault("weapon", {})
+        w["ry"] = -arm * keep + tilt
+        out.append(q)
+    return out
+
+
+def clip_idle_ranger():
+    """弓手待机：手臂放低、弓竖直低垂并微微前倾（弓腹朝向目标）。
+
+    上一版把 armR 和 weapon 同向相加，弓被转了 ~70° 变成横的 —— 那是错的。
+    """
+    return _retarget_bow([
+        pose(armR={"ry": 22}, armL={"ry": -6}),
+        pose(hips={"tz": 0.012}, spine={"ry": 1.5}, head={"ry": -1.5},
+             armR={"ry": 20}, armL={"ry": -4}),
+        pose(hips={"tz": 0.004}, spine={"ry": 2.5}, head={"ry": -2.5},
+             armR={"ry": 19}, armL={"ry": -3}),
+        pose(hips={"tz": -0.004}, spine={"ry": 0.5}, head={"ry": -0.5},
+             armR={"ry": 24}, armL={"ry": -7}),
+    ], keep=1.0, tilt=-8)
+
+
+def clip_walk_ranger():
+    """弓手走路：身体动，但弓大致指向目标，不跟着手臂来回甩。"""
+    return _retarget_bow(clip_walk(), keep=0.9, tilt=-8)
+
+
 def clip_walk():
     return [
         pose(hips={"tz": -0.022, "ty": 0.012}, spine={"ry": 7, "rz": 8},
@@ -354,6 +391,56 @@ def clip_attack3():
              weapon={"ry": 8}),
         pose(hips={"tz": -0.01}, spine={"ry": 2}, head={"ry": -2},
              armR={"ry": -22}, armL={"ry": 24}, weapon={"ry": 6}),
+    ]
+
+
+def clip_shoot():
+    """弓手拉弓：举弓 → 拉弦 → 满弓 → 放箭 → 回位。
+
+    只有 ranger 用这个剪辑（见 clips_for）。弓在 weapon 骨上、随 armR 抬起；
+    armL 是拉弦手，靠 ry 正值往后收。6 帧 @14fps ≈ 0.43s，正好对上
+    ATTACKS.shoot 的 startup 8 + active 1 + recovery 16（25 逻辑帧）。
+    """
+    return [
+        # 1 举弓瞄准（weapon 反向补偿 armR，让弓保持竖直）
+        pose(hips={"rz": -4}, spine={"ry": 2, "rz": -6}, head={"rz": -2},
+             armR={"ry": -58, "rx": -4}, armL={"ry": 18},
+             legR={"ry": -4}, legL={"ry": 4}, weapon={"ry": 52}),
+        # 2 开始拉弦（躯干后仰、向远侧拧）
+        pose(hips={"rz": -8, "tz": -0.008}, spine={"ry": -2, "rz": -18}, head={"rz": -8},
+             armR={"ry": -64, "rx": -8}, armL={"ry": 72},
+             legR={"ry": -6}, legL={"ry": 8}, weapon={"ry": 58}),
+        # 3 满弓（身体后仰拧腰，拉弦手到脸颊）
+        pose(hips={"rz": -12, "tz": -0.018}, spine={"ry": -6, "rz": -30}, head={"rz": -14, "ry": -2},
+             armR={"ry": -66, "rx": -14}, armL={"ry": 100},
+             legR={"ry": -10}, legL={"ry": 12}, weapon={"ry": 62}),
+        # 4 放箭（躯干前送、拉弦手弹出）
+        pose(hips={"rz": -2, "tz": -0.004}, spine={"ry": 10, "rz": -2}, head={"rz": 2},
+             armR={"ry": -60, "rx": -2}, armL={"ry": -24},
+             legR={"ry": -4}, legL={"ry": 4}, weapon={"ry": 54}),
+        # 5 后坐回位
+        pose(hips={"rz": 2}, spine={"ry": 4, "rz": 6}, head={"rz": 2},
+             armR={"ry": -28}, armL={"ry": 8},
+             legR={"ry": 2}, legL={"ry": -2}, weapon={"ry": 26}),
+    ]
+
+
+def clip_aim():
+    """弓手在射程内的「持弓待发」：满弓姿势 + 轻微呼吸起伏（2 帧循环）。
+
+    和 clip_shoot 的第 3 帧同源，所以从「瞄准」切到「放箭」时不会跳姿势。
+
+    弓的姿态：weapon 的 ry 在反向补偿 armR 的基础上**再加 90°**（62 → 152）。
+    侧视机位下弓原本是"侧着"的，玩家只能看到弓背侧面；转 90° 后整个 C 形
+    与弓弦正对镜头，弦在朝向目标的一侧。
+    """
+    return [
+        pose(hips={"rz": -12, "tz": -0.018}, spine={"ry": -6, "rz": -30}, head={"rz": -14, "ry": -2},
+             armR={"ry": -66, "rx": -14}, armL={"ry": 100},
+             legR={"ry": -10}, legL={"ry": 12}, weapon={"ry": 62}),
+        pose(hips={"rz": -11, "tz": -0.022}, spine={"ry": -5, "rz": -28}, head={"rz": -13, "ry": -2},
+             armR={"ry": -65, "rx": -13}, armL={"ry": 98},
+             legR={"ry": -10}, legL={"ry": 12}, weapon={"ry": 61}),
     ]
 
 
@@ -452,6 +539,25 @@ CLIPS = [
     ("special", clip_special, 12, False, 0),
 ]
 
+# 只有弓手需要「拉弓」剪辑；其它角色共用上面的表，避免多渲一套没用的帧。
+EXTRA_CLIPS = {
+    "ranger": [
+        ("aim", clip_aim, 6, True, 2),
+        ("shoot", clip_shoot, 14, False, 6),
+    ],
+}
+
+# 按角色覆盖某个共用剪辑的构建函数（弓手的待机/走路要让弓保持朝向目标）
+CLIP_OVERRIDES = {
+    "ranger": {"idle": clip_idle_ranger, "walk": clip_walk_ranger},
+}
+
+
+def clips_for(kind):
+    overrides = CLIP_OVERRIDES.get(kind, {})
+    clips = [(n, overrides.get(n, b), f, l, t) for n, b, f, l, t in CLIPS]
+    return clips + EXTRA_CLIPS.get(kind, [])
+
 
 def _lerp_pose(a, b, t):
     out = {}
@@ -485,12 +591,12 @@ def resample_clip(poses, target, loop):
     return out
 
 
-def bake_actions(arm):
+def bake_actions(arm, clips):
     for pb in arm.pose.bones:
         pb.rotation_mode = "QUATERNION"
     ad = arm.animation_data_create()
     actions = {}
-    for name, builder, fps, loop, target in CLIPS:
+    for name, builder, fps, loop, target in clips:
         raw = builder()
         frames = resample_clip(raw, target, loop)
         fps = round(fps * len(frames) / len(raw))
@@ -1106,7 +1212,7 @@ def build_ranger():
     # longbow in the near hand --------------------------------------------
     hand = Vector((0.105, -0.206, 0.638))
     u = Vector((0.20, 0.0, 0.98)).normalized()     # bow "up" axis, leaning forward
-    v = Vector((0.98, 0.0, -0.20)).normalized()    # forward (belly of the bow)
+    v = Vector((-0.98, 0.0, 0.20)).normalized()    # forward (belly)
     n = Vector((0.0, 1.0, 0.0))
     half = 0.430
     steps = 11
@@ -1400,8 +1506,324 @@ def build_boss():
     return cfg, bones, "BossRig", "BossMesh"
 
 
+def build_warden():
+    """召唤者 Boss：高瘦长袍 + 法杖，和锈月骑士共用骨架与动作。
+
+    设计意图（和骑士的区分度，按远、中、近三个距离都能一眼认出）：
+      * 剪影：没有肩甲/头盔的方肩，换成**兜帽 + 长袍**的垂坠轮廓
+      * 材质：紫袍 + 青玉（emissive），不是铁灰 + 赤红
+      * 武器：细长法杖 + 发光宝珠，不是巨剑
+    骨架沿用 build_boss 的 9 骨/坐标，所以 9 组动作无需重做。
+    """
+    global BASE, MOTION, DEATH_F
+    height = 2.60
+    MOTION = height / 1.70
+    DEATH_F = 0.55
+
+    M = {
+        "robe": mat("wa_robe", (0.300, 0.120, 0.500), rough=0.86, spec=0.18),
+        "robe_d": mat("wa_robe_d", (0.170, 0.060, 0.300), rough=0.88, spec=0.15),
+        "robe_l": mat("wa_robe_l", (0.430, 0.200, 0.640), rough=0.84, spec=0.2),
+        "trim": mat("wa_trim", (0.20, 0.60, 0.52), rough=0.40, metal=0.55, spec=0.5),
+        "wood": mat("wa_wood", (0.235, 0.150, 0.095), rough=0.78),
+        "skin": mat("wa_skin", (0.050, 0.045, 0.060), rough=0.9),
+        "leather": mat("wa_leather", (0.120, 0.095, 0.090), rough=0.78),
+    }
+    M["glow"] = emissive("wa_glow", (0.30, 1.0, 0.85), 3.2)
+
+    # 长袍：下摆到地面的锥形，三段收腰 -------------------------------------
+    taper_box("robe_hem", (0.020, 0.0, 0.010), (0.005, 0.0, 0.760), 0.760, 0.620, 0.560, 0.470,
+              M["robe_d"], "hips")
+    taper_box("robe_skirt", (0.005, 0.0, 0.740), (0.010, 0.0, 1.320), 0.580, 0.480, 0.430, 0.360,
+              M["robe"], "hips")
+    prism("robe_split", (0.300, 0.0, 0.030), Vector((0, 0, 1)), Vector((0, 1, 0)),
+          Vector((1, 0, 0)),
+          [(0.720, -0.075), (0.720, 0.075), (0.0, 0.060), (0.0, -0.060)], 0.030,
+          M["robe_d"], "hips")
+    taper_box("sash", (0.012, 0.0, 1.290), (0.016, 0.0, 1.400), 0.450, 0.380, 0.440, 0.370,
+              M["leather"], "hips")
+    box_frame("sash_gem", (0.222, 0.0, 1.345), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.020, 0.055, 0.045, M["glow"], "hips")
+
+    # 躯干：比骑士窄一号 ---------------------------------------------------
+    taper_box("torso", (0.016, 0.0, 1.390), (0.030, 0.0, 1.960), 0.420, 0.340, 0.500, 0.330,
+              M["robe"], "spine")
+    prism("chest_trim", (0.240, 0.0, 1.560), Vector((0, 1, 0)), Vector((0, 0, 1)),
+          Vector((1, 0, 0)),
+          [(0.400, -0.060), (0.400, 0.060), (0.060, 0.080), (0.060, -0.080)], 0.026,
+          M["trim"], "spine")
+    # 兜帽
+    ico("hood", (-0.020, 0.0, 2.150), 0.235, (1.00, 0.95, 1.10), M["robe"], "head", subdiv=2)
+    tube("hood_peak", (-0.075, 0.0, 2.285), (-0.190, 0.0, 2.370), 0.105, 0.015, 6,
+         M["robe_d"], "head")
+    # 兜帽阴影里的脸：只留两颗青光
+    ico("face_shadow", (0.135, 0.0, 2.120), 0.140, (1.0, 0.85, 0.95), M["skin"], "head",
+        subdiv=2)
+    for side in (-1, 1):
+        box_frame("eye_%d" % side, (0.235, 0.058 * side, 2.140), Vector((1, 0, 0)),
+                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.020, 0.032, 0.026, M["glow"], "head")
+    prism("hood_rim", (0.215, 0.0, 2.230), Vector((0, 1, 0)), Vector((0, 0, 1)),
+          Vector((1, 0, 0)),
+          [(-0.090, 0.010), (0.090, 0.010), (0.070, -0.060), (-0.070, -0.060)], 0.040,
+          M["robe_d"], "head")
+
+    # 肩部垂布：让剪影从"方肩骑士"变成"垂肩法师"
+    for side in (-1, 1):
+        taper_box("drape_%d" % side, (0.010, 0.290 * side, 1.900),
+                  (0.050, 0.360 * side, 1.420), 0.360, 0.180, 0.300, 0.150,
+                  M["robe_l"], "spine")
+        prism("drape_tip_%d" % side, (0.052, 0.360 * side, 1.430), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), Vector((1, 0, 0)),
+              [(-0.150, 0.010), (0.150, 0.010), (0.0, -0.120)], 0.120,
+              M["robe_d"], "spine")
+
+    # 手臂：布袖，比骑士细 ------------------------------------------------
+    for side, tag, bone in ((-1, "R", "armR"), (1, "L", "armL")):
+        sh = (0.020, 0.300 * side, 1.930)
+        el = (0.070, 0.380 * side, 1.640)
+        wr = (0.140, 0.380 * side, 1.320)
+        tube("sleeve_up" + tag, sh, el, 0.105, 0.085, 8, M["robe"], bone)
+        tube("sleeve_low" + tag, el, wr, 0.090, 0.115, 8, M["robe"], bone)
+        ico("hand" + tag, wr, 0.070, (1.0, 1.0, 1.05), M["skin"], bone, subdiv=1)
+
+    # 法杖：细杖身 + 顶端宝珠 + 三道爪 ------------------------------------
+    hand = Vector((0.135, -0.440, 1.295))
+    staff_up = Vector((0.28, 0.0, 0.96)).normalized()
+    tube("staff", tuple(hand - staff_up * 0.420), tuple(hand + staff_up * 1.020),
+         0.028, 0.022, 6, M["wood"], "weapon")
+    tube("staff_collar", tuple(hand + staff_up * 0.980), tuple(hand + staff_up * 1.040),
+         0.048, 0.036, 6, M["trim"], "weapon")
+    ico("staff_orb", tuple(hand + staff_up * 1.110), 0.105, (1.0, 1.0, 1.0), M["glow"],
+        "weapon", subdiv=2)
+    u_s, v_s, n_s = basis(staff_up, (0, 1, 0))
+    for k in range(3):
+        a = math.radians(120 * k)
+        d = v_s * math.cos(a) + n_s * math.sin(a)
+        tube("staff_prong_%d" % k, tuple(hand + staff_up * 0.995),
+             tuple(hand + staff_up * 1.170 + d * 0.115), 0.020, 0.006, 4, M["trim"], "weapon")
+    box_frame("staff_ring", tuple(hand + staff_up * 0.760), u_s, v_s, n_s, 0.012, 0.060, 0.060,
+              M["trim"], "weapon")
+
+    BASE = {
+        "spine": {"ry": 1.0, "rz": -1.0},
+        "head": {"ry": -1.0, "rz": 1.0},
+        "armR": {"ry": -6.0, "rx": -4.0},
+        "armL": {"ry": 10.0, "rx": 6.0},
+        "legR": {"ry": 2.0},
+        "legL": {"ry": -2.0},
+        "weapon": {"ry": 2.0},
+    }
+
+    bones = [
+        {"name": "root", "head": (0, 0, 0), "tail": (0, 0, 0.30), "deform": False},
+        {"name": "hips", "head": (0, 0, 1.280), "tail": (0, 0, 1.450), "parent": "root"},
+        {"name": "spine", "head": (0, 0, 1.450), "tail": (0, 0, 1.960), "parent": "hips",
+         "connect": True},
+        {"name": "head", "head": (0, 0, 1.960), "tail": (0, 0, 2.360), "parent": "spine",
+         "connect": True},
+        {"name": "armR", "head": (0.020, -0.300, 1.930), "tail": (0.140, -0.380, 1.320),
+         "parent": "spine"},
+        {"name": "armL", "head": (0.020, 0.300, 1.930), "tail": (0.140, 0.380, 1.320),
+         "parent": "spine"},
+        {"name": "legR", "head": (0, -0.170, 1.280), "tail": (0.075, -0.190, 0.200),
+         "parent": "hips"},
+        {"name": "legL", "head": (0, 0.170, 1.280), "tail": (0.075, 0.190, 0.200),
+         "parent": "hips"},
+        {"name": "weapon", "head": tuple(hand), "tail": tuple(hand + staff_up * 0.70),
+         "parent": "armR"},
+    ]
+    cfg = {
+        "kind": "warden", "height": height, "render_px": 512, "cell": 160,
+        "anchor": (80, 144), "target_px": 112,
+    }
+    return cfg, bones, "WardenRig", "WardenMesh"
+
+
+def build_berserker():
+    """狂战士 Boss：矮壮驼背 + 双刃巨斧，和骑士/召唤者共用骨架与动作。
+
+    区分策略（三种剪影差异最大化）：
+      * 骑士：方肩盔甲 + 直立 + 巨剑（细长竖线）
+      * 召唤者：兜帽长袍 + 修长 + 法杖（细长斜线）
+      * 狂战士：**短腿宽肩 + 前倾驼背 + 双刃斧**（横向宽块，重心低）
+    体积感靠肩背的毛皮块和斧面的宽刃，不靠增高。
+    """
+    global BASE, MOTION, DEATH_F
+    height = 2.35
+    MOTION = height / 1.70
+    DEATH_F = 0.55
+
+    M = {
+        "skin": mat("be_skin", (0.330, 0.235, 0.195), rough=0.86),
+        "skin_d": mat("be_skin_d", (0.215, 0.145, 0.120), rough=0.88),
+        "fur": mat("be_fur", (0.175, 0.150, 0.140), rough=0.92),
+        "fur_l": mat("be_fur_l", (0.280, 0.245, 0.220), rough=0.90),
+        "iron": mat("be_iron", (0.245, 0.240, 0.265), rough=0.46, metal=0.5, spec=0.5),
+        "iron_d": mat("be_iron_d", (0.140, 0.135, 0.155), rough=0.52, metal=0.42),
+        "leather": mat("be_leather", (0.185, 0.130, 0.095), rough=0.78),
+        "bone": mat("be_bone", (0.640, 0.605, 0.520), rough=0.60),
+        "steel": mat("be_steel", (0.560, 0.575, 0.620), rough=0.30, metal=0.72, spec=0.6),
+    }
+    M["eye"] = emissive("be_eye", (1.0, 0.42, 0.06), 3.0)
+
+    # 短粗腿：站姿外八，重心压得很低 ------------------------------------
+    for side, tag in ((-1, "R"), (1, "L")):
+        hip = (0.0, 0.235 * side, 1.030)
+        knee = (0.030, 0.265 * side, 0.560)
+        ankle = (0.055, 0.275 * side, 0.165)
+        tube("thigh" + tag, hip, knee, 0.175, 0.150, 8, M["skin_d"], "leg" + tag)
+        tube("shin" + tag, knee, ankle, 0.150, 0.130, 8, M["skin"], "leg" + tag)
+        taper_box("foot" + tag, (0.095, 0.275 * side, 0.0), (0.045, 0.275 * side, 0.190),
+                  0.240, 0.330, 0.215, 0.270, M["leather"], "leg" + tag)
+        tube("shinwrap" + tag, (0.055, 0.275 * side, 0.180), (0.040, 0.270 * side, 0.490),
+             0.165, 0.150, 8, M["fur"], "leg" + tag)
+        ico("kneepad" + tag, knee, 0.130, (1.0, 0.95, 0.85), M["iron_d"], "leg" + tag, subdiv=1)
+
+    # 腰腹：宽、厚，向前挺 ----------------------------------------------
+    taper_box("gut", (0.045, 0.0, 0.960), (0.020, 0.0, 1.360), 0.680, 0.520, 0.720, 0.500,
+              M["skin"], "hips")
+    taper_box("belt", (0.015, 0.0, 1.320), (0.020, 0.0, 1.410), 0.700, 0.510, 0.700, 0.500,
+              M["leather"], "hips")
+    ico("gut_fur", (0.150, 0.0, 1.180), 0.300, (0.90, 1.05, 0.65), M["fur"], "hips", subdiv=1)
+
+    # 驼背躯干：胸廓前倾，肩部向前压 ------------------------------------
+    taper_box("chest", (0.045, 0.0, 1.380), (0.145, 0.0, 1.760), 0.700, 0.500, 0.880, 0.540,
+              M["skin"], "spine")
+    ico("hump", (-0.115, 0.0, 1.700), 0.320, (1.0, 1.25, 0.80), M["fur_l"], "spine", subdiv=2)
+    # 皮毛护肩：把肩线横向拉宽，是"宽块剪影"的关键
+    for side in (-1, 1):
+        ico("shoulder_fur_%d" % side, (0.030, 0.430 * side, 1.720), 0.300,
+            (0.95, 1.10, 0.78), M["fur"], "spine", subdiv=2)
+        tube("shoulder_spike_%d" % side, (0.010, 0.430 * side, 1.870),
+             (-0.070, 0.520 * side, 1.990), 0.070, 0.010, 6, M["bone"], "spine")
+
+    # 头：小、缩在肩里，两只角 ------------------------------------------
+    tube("neck", (0.120, 0.0, 1.700), (0.150, 0.0, 1.800), 0.135, 0.120, 8, M["skin_d"], "spine")
+    ico("skull", (0.170, 0.0, 1.930), 0.185, (1.0, 0.95, 0.92), M["skin"], "head", subdiv=2)
+    box_frame("jaw", (0.290, 0.0, 1.870), Vector((1, 0, 0)), Vector((0, 1, 0)),
+              Vector((0, 0, 1)), 0.075, 0.130, 0.070, M["skin_d"], "head")
+    for side in (-1, 1):
+        # 獠牙
+        prism("tusk_%d" % side, (0.320, 0.080 * side, 1.845), Vector((1, 0, 0)),
+              Vector((0, 1, 0)), Vector((0, 0, 1)),
+              [(0.0, -0.018), (0.070, 0.0), (0.0, 0.018)], 0.030, M["bone"], "head")
+        # 犄角：向前上方弯
+        tube("horn_a_%d" % side, (0.140, 0.150 * side, 2.060), (0.260, 0.290 * side, 2.180),
+             0.075, 0.050, 6, M["bone"], "head")
+        tube("horn_b_%d" % side, (0.260, 0.290 * side, 2.180), (0.380, 0.360 * side, 2.130),
+             0.050, 0.012, 6, M["bone"], "head")
+        box_frame("eye_%d" % side, (0.320, 0.075 * side, 1.955), Vector((1, 0, 0)),
+                  Vector((0, 1, 0)), Vector((0, 0, 1)), 0.022, 0.034, 0.026, M["eye"], "head")
+
+    # 粗壮手臂：比骑士更短更粗，肘部外翻 --------------------------------
+    for side, tag, bone in ((-1, "R", "armR"), (1, "L", "armL")):
+        sh = (0.070, 0.430 * side, 1.680)
+        el = (0.150, 0.510 * side, 1.330)
+        wr = (0.250, 0.500 * side, 1.030)
+        tube("upperarm" + tag, sh, el, 0.170, 0.145, 8, M["skin"], bone)
+        ico("elbow" + tag, el, 0.140, (1.0, 1.0, 0.95), M["skin_d"], bone, subdiv=1)
+        tube("forearm" + tag, el, wr, 0.150, 0.130, 8, M["skin"], bone)
+        tube("bracer" + tag, (0.180, 0.505 * side, 1.230), (0.250, 0.500 * side, 1.020),
+             0.165, 0.150, 8, M["iron_d"], bone)
+        ico("fist" + tag, wr, 0.135, (1.0, 1.05, 1.0), M["skin_d"], bone, subdiv=2)
+
+    # 双刃巨斧：短柄 + 两侧大斧面（唯一一套，旧的 prism 版本已删除）----------
+    hand = Vector((0.250, -0.500, 1.030))
+    U = Vector((0.900, 0.0, 0.300)).normalized()
+    tube("haft", tuple(hand - U * 0.300), tuple(hand + U * 0.540), 0.054, 0.048, 8,
+         M["leather"], "weapon")
+    ico("haft_cap", tuple(hand - U * 0.325), 0.072, (1, 1, 1), M["iron"], "weapon", subdiv=1)
+    hub = hand + U * 0.430
+    perp = Vector((0.300, 0.0, -0.900)).normalized()   # 垂直于柄、躺在 XZ 平面
+    N = Vector((0.0, 1.0, 0.0))
+    blade = [(0.05, -0.07), (0.14, 0.16), (0.30, 0.30), (0.44, 0.20),
+             (0.48, 0.02), (0.26, -0.14)]
+    for sgn in (-1, 1):
+        poly = [(x * sgn, y) for x, y in blade]
+        prism("axe_blade_%d" % sgn, tuple(hub), perp, U, N, poly, 0.052, M["steel"], "weapon")
+    ico("axe_boss", tuple(hub), 0.095, (1, 1, 1), M["iron"], "weapon", subdiv=1)
+
+    BASE = {
+        "spine": {"ry": 8.0, "rz": -2.0},
+        "head": {"ry": -6.0, "rz": 1.0},
+        "armR": {"ry": -10.0, "rx": -8.0},
+        "armL": {"ry": 14.0, "rx": 10.0},
+        "legR": {"ry": 4.0},
+        "legL": {"ry": -4.0},
+        "weapon": {"ry": 6.0},
+    }
+
+    bones = [
+        {"name": "root", "head": (0, 0, 0), "tail": (0, 0, 0.30), "deform": False},
+        {"name": "hips", "head": (0, 0, 1.030), "tail": (0, 0, 1.200), "parent": "root"},
+        {"name": "spine", "head": (0, 0, 1.200), "tail": (0, 0, 1.760), "parent": "hips",
+         "connect": True},
+        {"name": "head", "head": (0, 0, 1.760), "tail": (0, 0, 2.180), "parent": "spine",
+         "connect": True},
+        {"name": "armR", "head": (0.070, -0.430, 1.680), "tail": (0.250, -0.500, 1.030),
+         "parent": "spine"},
+        {"name": "armL", "head": (0.070, 0.430, 1.680), "tail": (0.250, 0.500, 1.030),
+         "parent": "spine"},
+        {"name": "legR", "head": (0, -0.235, 1.030), "tail": (0.055, -0.275, 0.165),
+         "parent": "hips"},
+        {"name": "legL", "head": (0, 0.235, 1.030), "tail": (0.055, 0.275, 0.165),
+         "parent": "hips"},
+        {"name": "weapon", "head": tuple(hand), "tail": tuple(hand + U * 0.62),
+         "parent": "armR"},
+    ]
+    cfg = {
+        "kind": "berserker", "height": height, "render_px": 512, "cell": 160,
+        "anchor": (80, 144), "target_px": 112,
+    }
+    return cfg, bones, "BerserkerRig", "BerserkerMesh"
+
+def build_shield():
+    """盾兵：复用 brute 的重甲几何，左手挂一面大圆盾。
+
+    与 brute 的区分点（远看就能认出"这个要绕后"）：
+      * 左手一面朝 +X 的**竖直大圆盾**（正面挡刀的直接视觉暗示）
+      * 独立材质 sh_*（冷铁 + 黄铜包边），和 brute 的暖棕甲区分
+    右手仍持棒（weapon 骨），所以它也会攻击，只是慢。
+    动作沿用 brute 的剪辑集 —— 骨架完全一致，只是多挂了一件几何。
+    """
+    cfg, bones, rig_name, mesh_name = build_brute()
+    cfg = dict(cfg)
+    cfg["kind"] = "shield"
+
+    # brute 的左手臂尖（armL tail）就是握盾点
+    hand = Vector((0.128, 0.348, 0.752))
+
+    iron = mat("sh_iron", (0.330, 0.335, 0.395), rough=0.42, metal=0.62, spec=0.55)
+    iron_d = mat("sh_iron_d", (0.170, 0.175, 0.215), rough=0.50, metal=0.5, spec=0.45)
+    trim = mat("sh_trim", (0.640, 0.455, 0.140), rough=0.38, metal=0.68, spec=0.5)
+
+    # 盾面：轴沿 X 的扁圆柱 → 两个圆面正好朝前/朝后
+    centre = hand + Vector((0.205, 0.030, 0.045))
+    tube("shield_face", tuple(centre - Vector((0.062, 0, 0))),
+         tuple(centre + Vector((0.062, 0, 0))), 0.345, 0.330, 10, iron, "armL")
+    # 包边：一圈更粗的边环（用略大的扁柱叠在后面）
+    tube("shield_rim", tuple(centre - Vector((0.070, 0, 0))),
+         tuple(centre + Vector((0.048, 0, 0))), 0.368, 0.352, 10, trim, "armL")
+    # 盾心凸钉
+    ico("shield_boss", tuple(centre + Vector((0.075, 0, 0))), 0.090, (1, 1, 1),
+        iron_d, "armL", subdiv=2)
+    # 竖向加强筋：让盾面在 3/4 视角不至于糊成一坨
+    for k, dz in enumerate((-0.170, 0.0, 0.170)):
+        box_frame("shield_rib_%d" % k, tuple(centre + Vector((0.072, 0, dz))),
+                  Vector((1, 0, 0)), Vector((0, 0, 1)), Vector((0, 1, 0)),
+                  0.016, 0.052, 0.090, iron_d, "armL")
+    # 手持处：盾背的把手（朝 -X）
+    tube("shield_grip", tuple(hand + Vector((0.10, 0.02, 0.02))),
+         tuple(hand + Vector((0.26, 0.02, 0.02))), 0.036, 0.036, 6,
+         mat("sh_leather", (0.215, 0.130, 0.075), rough=0.76), "armL")
+
+    return cfg, bones, "ShieldRig", "ShieldMesh"
+
+
 BUILDERS = {"grunt": build_grunt, "brute": build_brute,
-            "ranger": build_ranger, "boss": build_boss}
+            "ranger": build_ranger, "shield": build_shield,
+            "boss": build_boss, "warden": build_warden,
+            "berserker": build_berserker}
 
 
 # ============================================================================
@@ -1418,12 +1840,13 @@ def main():
     cfg, bones, rig_name, mesh_name = BUILDERS[kind]()
     arm = make_armature(rig_name, bones, rig_name)
     mesh = join_and_bind(arm, mesh_name)
-    actions = bake_actions(arm)
+    clips = clips_for(kind)
+    actions = bake_actions(arm, clips)
 
     scene_cfg = setup_scene(kind, cfg["height"], cfg["target_px"], cfg["render_px"],
                             cfg["cell"], cfg["anchor"], samples=16)
     scene_cfg["clips"] = {n: {"frames": len(b()), "fps": f, "loop": l}
-                          for n, b, f, l, t in CLIPS}
+                          for n, b, f, l, t in clips}
 
     # measured bounds (rest pose)
     corners = [mesh.matrix_world @ Vector(c) for c in mesh.bound_box]
@@ -1463,3 +1886,12 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
+
+
+
+
+
+
+

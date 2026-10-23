@@ -101,7 +101,7 @@ def downscale_premultiplied(rgb: Image.Image, alpha: Image.Image, size) -> tuple
 
 
 def compose(restyled_path: Path, alpha_path: Path, cell, anchor, colors: int, threshold: int,
-            plan: dict, legacy_bbox: bool = False):
+            plan: dict, legacy_bbox: bool = False, palette_img: Image.Image | None = None):
     restyled = Image.open(restyled_path).convert("RGB")
     src = Image.open(alpha_path).convert("RGBA")
     if restyled.size != src.size:
@@ -109,6 +109,14 @@ def compose(restyled_path: Path, alpha_path: Path, cell, anchor, colors: int, th
 
     cw, ch = cell
     scale = plan["scale"]
+
+    def _quantize(rgb: Image.Image) -> Image.Image:
+        """优先用全局调色板（跨 sprite/跨帧一致）；否则退回逐帧量化。"""
+        if palette_img is not None:
+            return rgb.quantize(palette=palette_img, dither=Image.Dither.NONE).convert("RGB")
+        if colors and colors < 256:
+            return rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+        return rgb
 
     if legacy_bbox:
         # 旧行为，仅用于 A/B 对比与回退
@@ -120,9 +128,7 @@ def compose(restyled_path: Path, alpha_path: Path, cell, anchor, colors: int, th
         nw, nh = max(1, round((x1 - x0) * scale)), max(1, round((y1 - y0) * scale))
         if nw > cw:
             raise ValueError(f"缩放后宽度 {nw} 超过 cell {cw}")
-        rgb = restyled.crop(bb).resize((nw, nh), Image.LANCZOS)
-        if colors and colors < 256:
-            rgb = rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+        rgb = _quantize(restyled.crop(bb).resize((nw, nh), Image.LANCZOS))
         aa = a.crop(bb).resize((nw, nh), Image.NEAREST)
         sprite = rgb.convert("RGBA")
         sprite.putalpha(aa)
@@ -140,8 +146,7 @@ def compose(restyled_path: Path, alpha_path: Path, cell, anchor, colors: int, th
     rgb_crop = restyled.crop((left, top, right, bottom))
     alpha_crop = alpha_mask(src, threshold).crop((left, top, right, bottom))
     rgb, a_small = downscale_premultiplied(rgb_crop, alpha_crop, (nw, nh))
-    if colors and colors < 256:
-        rgb = rgb.quantize(colors=colors, method=Image.MEDIANCUT, dither=Image.Dither.NONE).convert("RGB")
+    rgb = _quantize(rgb)
 
     sprite = rgb.convert("RGBA")
     sprite.putalpha(a_small.point(lambda v: 255 if v >= threshold else 0))
@@ -168,6 +173,8 @@ def main() -> int:
     ap.add_argument("--cell", default=CELL_DEFAULT)
     ap.add_argument("--anchor", default=ANCHOR_DEFAULT)
     ap.add_argument("--colors", type=int, default=32)
+    ap.add_argument("--palette", default=None,
+                    help="全局调色板 PNG（tools/palette.py 产出）；给了就用它，忽略 --colors 的逐帧量化")
     ap.add_argument("--ref", default=None, help="站姿参考帧，用来定死全角色统一缩放（强烈建议传 idle_00）")
     ap.add_argument("--threshold", type=int, default=128)
     ap.add_argument("--legacy-bbox", action="store_true", help="回到旧的逐帧 bbox 居中（仅用于 A/B 与回退）")
@@ -177,7 +184,7 @@ def main() -> int:
     anchor = tuple(int(v) for v in args.anchor.split(","))
     root, alpha_root, out_root = Path(args.restyled), Path(args.alpha), Path(args.out)
     files = sorted(p for p in root.rglob("*.png")
-                   if not any(part.startswith(".") for part in p.relative_to(root).parts))
+                   if not any(part.startswith(("_", ".")) for part in p.relative_to(root).parts))
     if not files:
         print(f"错误: {root} 没有 PNG", file=sys.stderr)
         return 2
@@ -192,6 +199,15 @@ def main() -> int:
         alpha_files.append(apath)
 
     ref_path = Path(args.ref) if args.ref else alpha_files[0]
+    palette_img = None
+    if args.palette:
+        try:
+            palette_img = Image.open(args.palette)
+            if palette_img.mode != "P":
+                palette_img = palette_img.convert("P", palette=Image.ADAPTIVE, colors=256)
+        except Exception as e:  # noqa: BLE001
+            print(f"错误: 读不到调色板 {args.palette}: {e}", file=sys.stderr)
+            return 2
     try:
         plan = plan_box(alpha_files, ref_path, args.height, cell, args.threshold)
     except ValueError as e:
@@ -204,7 +220,8 @@ def main() -> int:
     transforms = {}
     for f, apath in zip(files, alpha_files):
         try:
-            img, info = compose(f, apath, cell, anchor, args.colors, args.threshold, plan, args.legacy_bbox)
+            img, info = compose(f, apath, cell, anchor, args.colors, args.threshold, plan,
+                                args.legacy_bbox, palette_img)
         except ValueError as e:
             print(f"错误 {f}: {e}", file=sys.stderr)
             return 1

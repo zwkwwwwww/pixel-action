@@ -144,7 +144,7 @@ bg.convert('RGB').save(sys.argv[2])
 
     const started = Date.now();
     // 同一剪辑共用一个种子：噪声相关，帧间更稳
-    const res = await runAndSave(workflow(name, SEED), dst, { timeoutMs: 300000 });
+    const res = await runAndSave(workflow(name, SEED), dst, { timeoutMs: Number(process.env.COMFY_TIMEOUT_MS || 600000) });
     const ms = Date.now() - started;
     timings.push({ file: rel, ms, bytes: res.bytes, promptId: res.promptId });
     done++;

@@ -1,0 +1,20 @@
+{
+  "sheet": "assets\\sprites\\grunt.json",
+  "clip": "walk",
+  "frames": 10,
+  "spreads": [
+    24,
+    18,
+    12,
+    17,
+    24,
+    29,
+    24,
+    19,
+    13,
+    17
+  ],
+  "threshold": 8,
+  "consecutiveStraightPairs": [],
+  "pass": true
+}

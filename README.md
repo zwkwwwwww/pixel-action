@@ -1,6 +1,6 @@
 # 锈月回响 / Echoes of the Rusted Moon
 
-一个用 **Blender + ComfyUI** 产出的 **横版 2.5D 像素动作游戏**垂直切片。
+一个用 **Blender + ComfyUI** 产出的 **横版 2.5D 像素动作游戏**垂直切片（**两关**）。
 
 - 内部渲染 **480 × 270**，整数倍最近邻放大（像素边缘绝对不糊）
 - 原生 **HTML5 Canvas + ES Module**，零框架零依赖
@@ -24,15 +24,19 @@ python -m http.server 9500 --bind 127.0.0.1     # 在本目录启动
 | 普攻三连 | `J`（连按） |
 | 闪避（带无敌帧） | `K` |
 | 必杀（能量满） | `L` |
+| 暂停 | `Esc`（暂停中可 `R` 重开 / `M` 静音） |
 | 静音 | `M` |
 | 重开 | `R` |
 
-目标：清掉 3 波敌人 → 击败 Boss「锈月骑士」→ STAGE CLEAR。HP 归零即失败。
+目标：两关 —— 第 1 关「RUSTED STREET」清 3 波 + Boss，第 2 关「MOONLIT FOUNDRY」再清 3 波 + 更强的 Boss → ALL STAGES CLEAR。HP 归零即失败。
+
+结算会给出 **TIME / RANK（C-B-A-S）**，并记录到浏览器本地：
+最快通关时间、通关次数、历史最好评价（标题页显示 BEST / CLEARS）。
 
 ## 验证
 
 ```bash
-node --test "tests/**/*.test.mjs"        # 72 条纯逻辑单测（含无作弊自动通关）
+node --test "tests/**/*.test.mjs"        # 96 条纯逻辑单测（含无作弊自动通关）
 ```
 
 浏览器取证（CDP，真实键鼠事件 + 截图）见 `tools/browser-probe.mjs` 与 `tools/probes/`。
@@ -41,7 +45,7 @@ node --test "tests/**/*.test.mjs"        # 72 条纯逻辑单测（含无作弊�
 
 | 项 | 结果 |
 | --- | --- |
-| 单测 | 72 pass / 0 fail |
+| 单测 | 96 pass / 0 fail |
 | 素材加载 | `loaded:5 / failed:0`，console error 0 |
 | 清第 1 波（真实按键） | `segmentIndex:1`，2 杀，hp 112 |
 | Boss | 出场 hp 420、体型 20；18 次攻击造成 136 伤害；击杀后 `won:true` |
@@ -90,7 +94,7 @@ art-source/             Blender 工程源文件（.blend 入库，渲染帧不�
 
 ## 已知限制
 
-- 单关垂直切片：3 波小怪 + 1 Boss，没有多关卡/养成/存档。
+- 两关垂直切片：每关 3 波小怪 + 1 Boss，共 2 个 Boss 战；没有养成/商店/分支路线。
 - 敌人为控制生成时间只重塑了 idle / walk / attack1 / hurt / death 五个剪辑，attack2/3 播放时回退 attack1。
 - 触屏适配未做（桌面浏览器优先）。
 - 背景与角色的透视比例是风格化处理的（背景偏大），已用暗化与程序化地面统一观感。
