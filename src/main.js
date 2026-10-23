@@ -377,6 +377,16 @@ function logicStep() {
       state.shake = Math.min(8, state.shake + 4);
       playSfx('sfx_special', { volume: 0.45, rate: 0.8 });
       state.bossPhaseToast = { phase: ev.phase, until: performance.now() + 1200 };
+    } else if (ev.type === 'bossDown') {
+      // Boss 倒下：白闪 + 强震屏 + 慢动作感（后续 1.2s 由 level 的 bossDeathFrames 控制）
+      state.flash = 0.75;
+      state.shake = 9;
+      playSfx('sfx_death', { volume: 1.0, rate: 0.72 });
+      fx.numbers.push({
+        x: ev.x, y: ev.y, z: 60, vz: 0.35,
+        text: 'DOWN', age: 0, life: 90,
+        color: '#ffd166', scale: 3, outline: '#0a0d12',
+      });
     } else if (ev.type === 'guardBreak') {
       // 破防：金色 BREAK + 强震屏 + 重击音，是"绕后/蓄力"打法的高光时刻
       fx.numbers.push({

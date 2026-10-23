@@ -92,7 +92,10 @@ test('清完全部小怪后触发 Boss，Boss 必须出现在锁定的屏幕内'
   boss.hp = 0;
   boss.state = 'dead';
   updateLevel(w, lv);
-  assert.equal(lv.won, true);
+  // Boss 死后有 72 帧的"跪地演出"，期间还不算通关
+  assert.equal(lv.won, false, '死亡瞬间不该立刻通关（有演出）');
+  for (let i = 0; i < 80; i++) updateLevel(w, lv);
+  assert.equal(lv.won, true, '演出结束后应判定通关');
 });
 
 test('Boss 不死就不算通关', () => {

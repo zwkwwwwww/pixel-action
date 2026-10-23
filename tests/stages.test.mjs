@@ -66,6 +66,8 @@ test('清完第二关所有波次后才会触发 Boss', () => {
   assert.equal(lv.won, false);
   lv.bossActor.dead = true;
   updateLevel(w, lv, 120);
+  assert.equal(lv.won, false, '死亡瞬间有 72 帧演出，不该立刻通关');
+  for (let i = 0; i < 80; i++) updateLevel(w, lv, 120);
   assert.equal(lv.won, true);
 });
 

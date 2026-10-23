@@ -165,10 +165,22 @@ export function updateLevel(world, lv, camX) {
     lv.bossActor = spawn(world, lv.def.boss.spawn);
   }
 
+  // Boss 击败演出：死亡后先给 72 帧（1.2s）的"跪地"时间，
+  // 让玩家看清最后一击、听到死亡音、看到慢动作，再进结算。
+  // 否则血条一空立刻弹结算，胜利的爽感会被打断。
   if (lv.bossSpawned && lv.bossActor && lv.bossActor.dead) {
-    lv.won = true;
-    lv.gateX = null;
-    lv.camLockX = null;
+    if (lv.bossDeathFrames == null) {
+      lv.bossDeathFrames = 72;
+      world.events.push({
+        type: 'bossDown', x: lv.bossActor.x, y: lv.bossActor.y,
+      });
+    }
+    if (lv.bossDeathFrames > 0) lv.bossDeathFrames--;
+    if (lv.bossDeathFrames === 0) {
+      lv.won = true;
+      lv.gateX = null;
+      lv.camLockX = null;
+    }
   }
 }
 
