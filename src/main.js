@@ -310,8 +310,10 @@ function logicStep() {
   const evs = world.consumeEvents();
   for (const ev of evs) {
     if (ev.type === 'hit') {
-      state.shake = Math.min(6, state.shake + 3);
-      state.flash = Math.max(state.flash, ev.killed ? 0.5 : 0.25);
+      // 玩家被从背后打中：震屏更强、闪屏更红，让"后背空门"这件事有痛感
+      const backstab = ev.targetSide === 'player' && ev.fromBehind;
+      state.shake = Math.min(backstab ? 9 : 6, state.shake + (backstab ? 5 : 3));
+      state.flash = Math.max(state.flash, ev.killed ? 0.5 : (backstab ? 0.4 : 0.25));
       spawnHitFx(fx, ev);
       // 玩家挨打 → "呃"；打中敌人 → 金属撞击；击杀 → 追加"啊——"
       if (ev.targetSide === 'player') {

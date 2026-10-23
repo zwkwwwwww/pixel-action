@@ -242,7 +242,10 @@ function applyHit(world, attacker, target, def, opts = {}) {
   }
 
   // 命中停顿：只冻结模拟，不冻结玩家输入（输入照常进缓冲）
-  world.hitstop = Math.min(10, Math.max(world.hitstop, 6));
+  // 命中停顿按伤害分级：轻击 6 帧、重斩/击杀 10 帧、Boss 大招 12 帧。
+  // 固定值会让所有命中"手感一样重"，分级之后轻重招才有区分度。
+  const stopFrames = target.dead ? 10 : Math.min(12, 5 + Math.round(def.dmg / 6));
+  world.hitstop = Math.min(12, Math.max(world.hitstop, stopFrames));
 
   world.events.push({
     type: 'hit',
@@ -254,6 +257,12 @@ function applyHit(world, attacker, target, def, opts = {}) {
     targetKind: target.kind,
     dmg: appliedDmg,
     blocked,
+    // 玩家挨打时，攻击者是否来自背后（用于更强的受击反馈）
+    // 玩家朝右(facing=1)时，攻击者在左边(x 更小) → 来自背后。
+    // 即 sign(attacker - target) === -target.facing
+    fromBehind: target.side === 'player'
+      ? Math.sign(attacker.x - target.x) === -target.facing
+      : false,
     x: target.x,
     y: target.y,
     z: target.z,
