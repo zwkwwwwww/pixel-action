@@ -26,7 +26,7 @@
 
 ## 当前状态
 
-- 当前 Phase：**第 34 轮：难度选择（EASY/NORMAL/HARD），待人类验收**
+- 当前 Phase：**第 35 轮：暂停菜单战况简报，待人类验收**
 - 当前分支：`main`，tag 见 `phase-slice-2`
 - 运行状态：**正常**
 - 最近测试结果：`node --test "tests/**/*.test.mjs"` → **175 pass / 0 fail**

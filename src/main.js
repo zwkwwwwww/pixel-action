@@ -1022,12 +1022,25 @@ function draw() {
     }
   }
   if (state.paused) {
-    ctx.fillStyle = 'rgba(5,7,12,.74)';
+    ctx.fillStyle = 'rgba(5,7,12,.78)';
     ctx.fillRect(0, 0, VIEW_W, VIEW_H);
     const ptitle = 'PAUSED';
-    drawText(ctx, ptitle, (VIEW_W - textWidth(ptitle, 3)) / 2, VIEW_H / 2 - 34, '#e8dcc0', 3, '#05070b');
+    drawText(ctx, ptitle, (VIEW_W - textWidth(ptitle, 3)) / 2, VIEW_H / 2 - 46, '#e8dcc0', 3, '#05070b');
+
+    // 暂停时给一份"当前战况"简报：难度 / 关卡 / 波次 / 血量 / 飞刀
+    const pl = world.player;
+    const lines = [
+      `DIFFICULTY  ${state.difficulty.label}`,
+      `STAGE ${level.def.id}/${STAGES.length}   WAVE ${Math.min(level.segmentIndex + 1, level.def.segments.length)}/${level.def.segments.length}`,
+      `HP ${Math.round(pl.hp)}/${pl.maxHp}   KNIFE ${pl.ammo ?? 0}   MP ${Math.round(pl.meter)}`,
+      `COMBO BEST ${state.maxCombo}`,
+    ];
+    lines.forEach((line, i) => {
+      drawText(ctx, line, (VIEW_W - textWidth(line, 1)) / 2, VIEW_H / 2 - 16 + i * 14, '#9fb4d0', 1, '#05070b');
+    });
+
     const phint = 'ESC RESUME   R RESTART   M MUTE';
-    drawText(ctx, phint, (VIEW_W - textWidth(phint, 1)) / 2, VIEW_H / 2 + 4, '#9fb4d0', 1, '#05070b');
+    drawText(ctx, phint, (VIEW_W - textWidth(phint, 1)) / 2, VIEW_H / 2 + 50, '#6f88a6', 1, '#05070b');
   }
 
   if ((state.won || state.lost) && !state.stageClear) {
