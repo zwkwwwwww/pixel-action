@@ -34,6 +34,12 @@ const KEYMAP = {
   ArrowUp: 'up', KeyW: 'up',
   ArrowDown: 'down', KeyS: 'down',
 };
+// 难度：影响敌人伤害倍率与玩家血量。默认 NORMAL，和之前的数值完全一致。
+const DIFFICULTIES = [
+  { id: 'easy',   label: 'EASY',   dmgMul: 0.6, hpMul: 1.5, key: 'Digit1' },
+  { id: 'normal', label: 'NORMAL', dmgMul: 1.0, hpMul: 1.0, key: 'Digit2' },
+  { id: 'hard',   label: 'HARD',   dmgMul: 1.5, hpMul: 0.75, key: 'Digit3' },
+];
 const ACTION_KEYS = { KeyJ: 'attack', KeyK: 'dodge', KeyL: 'special', KeyU: 'throw', Space: 'jump' };
 
 const world = createWorld({
@@ -67,6 +73,7 @@ const state = {
   stageBanner: null,
   stageClear: null,
   maxCombo: 0,
+  difficulty: DIFFICULTIES[1],   // 默认 NORMAL
   // 新手引导：开局前 8 秒显示关键技巧提示，只显示一次
   tipFrames: 0,
   tipDone: false,
@@ -162,6 +169,16 @@ applyViewport();
 addEventListener('keydown', (e) => {
   ensureAudio();
   if (state.mode === 'title') {
+    const picked = DIFFICULTIES.find((d) => d.key === e.code);
+    if (picked) {
+      state.difficulty = picked;
+      // 立刻把玩家血量按难度缩放（进游戏前选，进游戏后生效）
+      world.player.maxHp = Math.round(240 * picked.hpMul);
+      world.player.hp = world.player.maxHp;
+      world.dmgMul = picked.dmgMul;
+      e.preventDefault();
+      return;
+    }
     if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ') {
       state.mode = 'play';
       if (!state.tipDone) state.tipFrames = 480;   // 8 秒
@@ -602,8 +619,17 @@ function drawTitle() {
 
   if (state.records.bestTimeMs !== null) {
     const best = `BEST ${formatTime(state.records.bestTimeMs)}   CLEARS ${state.records.clears}`;
-    drawText(ctx, best, (VIEW_W - textWidth(best, 1)) / 2, 210, '#9fb4d0', 1, '#05070b');
+    drawText(ctx, best, (VIEW_W - textWidth(best, 1)) / 2, 178, '#9fb4d0', 1, '#05070b');
   }
+
+  // 难度选择：高亮当前选项，1/2/3 切换
+  const diffLine = DIFFICULTIES
+    .map((d, i) => (d === state.difficulty ? `[${d.label}]` : ` ${d.label} `))
+    .join('  ');
+  const dw = textWidth(diffLine, 1);
+  drawText(ctx, diffLine, (VIEW_W - dw) / 2, 196, '#ffd166', 1, '#05070b');
+  const diffHint = '1 / 2 / 3  SELECT DIFFICULTY';
+  drawText(ctx, diffHint, (VIEW_W - textWidth(diffHint, 1)) / 2, 210, '#6f88a6', 1, '#05070b');
 
   const keys = 'WASD MOVE   J ATTACK   K ROLL   L SPECIAL   U KNIFE   SPACE JUMP   M MUTE';
   ctx.fillStyle = 'rgba(5,7,12,.6)';

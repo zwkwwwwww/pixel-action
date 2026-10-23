@@ -202,7 +202,12 @@ function applyHit(world, attacker, target, def, opts = {}) {
       blocked = true;
     }
   }
-  const appliedDmg = blocked ? Math.max(1, Math.round(def.dmg * 0.2)) : def.dmg;
+  let appliedDmg = blocked ? Math.max(1, Math.round(def.dmg * 0.2)) : def.dmg;
+  // 难度：只在"敌人打到玩家"时缩放伤害，玩家打敌人不受难度影响
+  // （否则高难度下敌人更耐打，会让战斗变成拖时长而不是更危险）
+  if (target.side === 'player' && world.dmgMul && world.dmgMul !== 1) {
+    appliedDmg = Math.max(1, Math.round(appliedDmg * world.dmgMul));
+  }
   target.hp -= appliedDmg;
   target.hurtTime = def.hitstun;
   target.stateFrame = 0;
