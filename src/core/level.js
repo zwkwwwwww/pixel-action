@@ -20,6 +20,11 @@ export const LEVEL = {
   viewW: VIEW_W,
   gateMargin: GATE_MARGIN,
   lockLead: LOCK_LEAD,
+  pickups: [
+    // 波次之间的补给箱：走过去自动拾取（回 15% 血 + 2 飞刀）
+    { x: 620, y: 40 },
+    { x: 1180, y: 60 },
+  ],
   segments: [
     {
       triggerX: 240,
@@ -60,6 +65,8 @@ export function createLevel(level = LEVEL) {
   return {
     def: level,
     segmentIndex: 0,
+    // 地面补给箱：走到附近自动拾取（回血 / 补弹）
+    pickups: ((level && level.pickups) || []).map((pk) => ({ x: pk.x, y: pk.y, taken: false })),
     gateX: null,     // 屏幕右缘的世界坐标（只用于夹玩家，不绘制）
     camLockX: null,  // 锁定的镜头位置（null = 自由跟随）
     wave: [],
@@ -163,6 +170,23 @@ export function updateLevel(world, lv, camX) {
     lv.bossSpawned = true;
     lockForWave(lv, camX, player.x, lv.def.boss.spawn.x);
     lv.bossActor = spawn(world, lv.def.boss.spawn);
+  }
+
+  // 地面补给箱：进入拾取范围就自动吃掉。
+  // 放在"波次间"能走到的地方，给玩家一个主动回血/补弹的机会，
+  // 而不是只能靠清波奖励被动恢复。
+  for (let i = lv.pickups.length - 1; i >= 0; i--) {
+    const pk = lv.pickups[i];
+    if (pk.taken) continue;
+    if (Math.abs(player.x - pk.x) > 22 || Math.abs(player.y - pk.y) > 20) continue;
+    pk.taken = true;
+    const heal = Math.round(player.maxHp * 0.15);
+    player.hp = Math.min(player.maxHp, player.hp + heal);
+    player.ammo = Math.min(9, (player.ammo || 0) + 2);
+    world.events.push({
+      type: 'pickupBox', x: pk.x, y: pk.y, heal, ammo: player.ammo,
+    });
+    lv.pickups.splice(i, 1);
   }
 
   // Boss 击败演出：死亡后先给 72 帧（1.2s）的"跪地"时间，

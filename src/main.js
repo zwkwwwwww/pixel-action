@@ -377,6 +377,14 @@ function logicStep() {
       state.shake = Math.min(8, state.shake + 4);
       playSfx('sfx_special', { volume: 0.45, rate: 0.8 });
       state.bossPhaseToast = { phase: ev.phase, until: performance.now() + 1200 };
+    } else if (ev.type === 'pickupBox') {
+      // 补给箱：绿色 +HP 飘字 + 轻快拾取音
+      fx.numbers.push({
+        x: ev.x, y: ev.y, z: 26, vz: 0.85,
+        text: `+${ev.heal}`, age: 0, life: 46,
+        color: '#7cf29a', scale: 1, outline: '#0a0d12',
+      });
+      playSfx('sfx_pickup', { volume: 0.8 });
     } else if (ev.type === 'bossDown') {
       // Boss 倒下：白闪 + 强震屏 + 慢动作感（后续 1.2s 由 level 的 bossDeathFrames 控制）
       state.flash = 0.75;
@@ -655,6 +663,30 @@ function draw() {
 
   ctx.save();
   ctx.translate(Math.round(shakeX), Math.round(shakeY));
+
+  // —— 地面补给箱 ——
+  // 画在角色之前（角色可以走过它），用"呼吸"缩放提示可交互
+  for (const pk of level.pickups || []) {
+    if (pk.taken) continue;
+    const bx = Math.round(pk.x - cam);
+    if (bx < -20 || bx > VIEW_W + 20) continue;
+    const by = Math.round(GROUND_TOP + pk.y);
+    const bob = Math.sin(state.frame * 0.08 + pk.x) * 1.5;
+    const cy = Math.round(by - 6 + bob);
+    // 影子
+    ctx.fillStyle = 'rgba(0,0,0,.32)';
+    ctx.fillRect(bx - 7, by - 1, 14, 3);
+    // 箱体
+    ctx.fillStyle = '#0a0d12';
+    ctx.fillRect(bx - 8, cy - 9, 16, 13);
+    ctx.fillStyle = '#3c6b4a';
+    ctx.fillRect(bx - 7, cy - 8, 14, 11);
+    // 箱盖高光 + 十字标记
+    ctx.fillStyle = '#6fbe8a';
+    ctx.fillRect(bx - 7, cy - 8, 14, 2);
+    ctx.fillRect(bx - 1, cy - 6, 2, 6);
+    ctx.fillRect(bx - 4, cy - 4, 8, 2);
+  }
 
   // 深度排序：y 大的后画（更靠前）
   const drawables = [

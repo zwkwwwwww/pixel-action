@@ -14,6 +14,10 @@ export const STAGE_2 = {
   name: 'MOONLIT FOUNDRY',
   worldW: 3400,
   viewW: 480,
+  pickups: [
+    { x: 700, y: 24 },
+    { x: 1320, y: 56 },
+  ],
   gateMargin: 4,
   lockLead: 216,
   segments: [
@@ -69,6 +73,10 @@ export const STAGE_3 = {
   bg: 'bg_boss',
   worldW: 3600,
   viewW: 480,
+  pickups: [
+    { x: 700, y: 24 },
+    { x: 1320, y: 56 },
+  ],
   gateMargin: 4,
   lockLead: 216,
   segments: [
