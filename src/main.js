@@ -11,7 +11,7 @@ import { ATTACKS, CHARGE } from './core/attacks.js';
 import { loadSprites, drawActorSprite } from './render/sprites.js';
 import { drawText, textWidth } from './render/pixelfont.js';
 import { createEffects, spawnHitFx, updateEffects, spawnTelegraph } from './core/effects.js';
-import { hitVariation, nextCombo } from './core/hit-rhythm.js';
+import { hitVariation, nextCombo, COMBO_WINDOW_MS } from './core/hit-rhythm.js';
 import { initAudio, playSfx, playBgm, stopBgm, toggleMute, audioSnapshot } from './render/audio.js';
 import { formatTime, loadRecords, saveClear } from './core/records.js';
 
@@ -931,6 +931,15 @@ function draw() {
     const grade = comboGrade(hitCombo + 1);
     if (grade) {
       drawText(ctx, grade.label, 408, 24, grade.color, 1, '#05070b');
+    }
+    // 连击剩余时间条：窗格内还有多久可以接下一击。
+    // 没有这条，玩家不知道连段马上要断，反馈是"莫名断连"。
+    const left = Math.max(0, 1 - (performance.now() - lastHitAt) / COMBO_WINDOW_MS);
+    if (left > 0) {
+      ctx.fillStyle = 'rgba(10,13,18,.7)';
+      ctx.fillRect(352, 32, 60, 2);
+      ctx.fillStyle = left > 0.35 ? '#ffd166' : '#d2483f';
+      ctx.fillRect(352, 32, Math.round(60 * left), 2);
     }
   }
 
