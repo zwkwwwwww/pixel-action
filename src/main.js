@@ -8,6 +8,7 @@ import { createLevel, updateLevel, cameraLimit } from './core/level.js';
 import { STAGES } from './core/stages.js';
 import { enemyThink } from './core/ai.js';
 import { ATTACKS, CHARGE } from './core/attacks.js';
+import { STORY, STORY_CHARS_PER_FRAME, sceneCharCount } from './core/story.js';
 import { loadSprites, drawActorSprite } from './render/sprites.js';
 import { drawText, textWidth } from './render/pixelfont.js';
 import { createEffects, spawnHitFx, updateEffects, spawnTelegraph } from './core/effects.js';
@@ -74,6 +75,9 @@ const state = {
   stageClear: null,
   maxCombo: 0,
   difficulty: DIFFICULTIES[1],   // 默认 NORMAL
+  // 叙事演出：{ list, index, kind }，null 表示不在演出中
+  story: null,
+  storyDone: false,     // 开场是否已看过（重开不再强制播）
   // 新手引导：开局前 8 秒显示关键技巧提示，只显示一次
   tipFrames: 0,
   tipDone: false,
@@ -86,6 +90,7 @@ const state = {
 // —— 精灵资产（Phase 2/3 管线产物）：缺失时自动回退色块，不阻塞可玩 ——
 const SHEETS = {};
 const BACKGROUNDS = {};
+const STORY_ART = {};   // 演出插画：{ bg_intro_1: Image, hero_portrait: Image, ... }
 // 精灵表缺失时的兜底映射（盾兵已有专属表，这里留着防止加载失败时整个渲染崩）
 // 必须定义在模块顶层：渲染循环在另一个函数作用域里，取不到 IIFE 内的局部变量
 const SHEET_ALIAS = { shield: 'brute' };
@@ -110,6 +115,19 @@ const prevPos = new Map();
       await img.decode();
       BACKGROUNDS[name] = img;
     } catch { /* 背景缺失就退回程序化背景 */ }
+  }));
+  // 演出插画（ComfyUI 非像素风）。缺图时 drawStory 自动降级为纯色底 + 文字，不会崩。
+  const storyWant = [
+    'bg_intro_1', 'bg_intro_2', 'bg_intro_3', 'bg_ending',
+    'hero_portrait', 'warden_portrait',
+  ];
+  await Promise.all(storyWant.map(async (name) => {
+    try {
+      const img = new Image();
+      img.src = `assets/story/${name}.png`;
+      await img.decode();
+      STORY_ART[name] = img;
+    } catch { /* 缺图 → 纯色回退 */ }
   }));
 })();
 
@@ -168,6 +186,21 @@ applyViewport();
 
 addEventListener('keydown', (e) => {
   ensureAudio();
+  // ——— 演出中：Enter 推进，Esc 跳过整段 ———
+  if (state.story) {
+    if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ') {
+      advanceStory();
+      e.preventDefault();
+      return;
+    }
+    if (e.code === 'Escape') {
+      endStory();
+      e.preventDefault();
+      return;
+    }
+    return;   // 演出期间吞掉其它按键
+  }
+
   if (state.mode === 'title') {
     const picked = DIFFICULTIES.find((d) => d.key === e.code);
     if (picked) {
@@ -180,9 +213,14 @@ addEventListener('keydown', (e) => {
       return;
     }
     if (e.code === 'Enter' || e.code === 'Space' || e.code === 'KeyJ') {
-      state.mode = 'play';
-      if (!state.tipDone) state.tipFrames = 480;   // 8 秒
-      playBgm('bgm_battle', { volume: 0.32 });
+      if (!state.storyDone) {
+        // 首次进入：先播开场三幕，演完自动进游戏
+        beginStory('intro');
+      } else {
+        state.mode = 'play';
+        if (!state.tipDone) state.tipFrames = 480;   // 8 秒
+        playBgm('bgm_battle', { volume: 0.32 });
+      }
       e.preventDefault();
     }
     return;
@@ -297,6 +335,7 @@ function logicStep() {
     state.tipFrames--;
     if (state.tipFrames === 0) state.tipDone = true;
   }
+
   state.won = level.won;
   state.lost = world.player.dead;
   // 通关结算：还有下一关就先进「STAGE n CLEAR」停顿 2 秒，最后一关才写纪录
@@ -313,6 +352,10 @@ function logicStep() {
         state.shake = 0;
         // 胜利音由 audioEvents 统一播（level.won 迁移时），这里不重复
       }
+    } else if (!state.endingSeen && !state.story) {
+      // 打通最后一关：先播结局演出，演完（endStory）再进结算
+      state.story = null;
+      beginStory('ending');
     } else if (!state.result) {
       const timeMs = (state.runFrames / WORLD.FPS) * 1000;
       const p = world.player;
@@ -593,6 +636,129 @@ function drawGround(cam) {
 }
 
 /** 标题画面：背景取中央 480×270，标题用点阵字排两行。 */
+/** 开启一段演出（kind: 'intro' | 'ending'）。 */
+function beginStory(kind) {
+  state.story = { kind, index: 0, typed: 0 };
+  state.mode = 'story';
+}
+
+/** 推进一步：文字未播完则直接补全，否则进下一幕；最后一幕结束则收尾。 */
+function advanceStory() {
+  const st = state.story;
+  if (!st) return;
+  const scene = STORY[st.kind][st.index];
+  const totalChars = sceneCharCount(scene);
+
+  if (st.typed < totalChars) {
+    st.typed = totalChars;     // 先补全当前幕
+    return;
+  }
+  st.index++;
+  st.typed = 0;
+  if (st.index >= STORY[st.kind].length) endStory();
+}
+
+/** 结束演出：开场 → 进游戏；结局 → 进结算。 */
+function endStory() {
+  const kind = state.story ? state.story.kind : null;
+  state.story = null;
+  if (kind === 'intro') {
+    state.storyDone = true;
+    state.mode = 'play';
+    if (!state.tipDone) state.tipFrames = 480;
+    playBgm('bgm_battle', { volume: 0.32 });
+  } else {
+    // 结局演完 → 回到 play（此时 state.won 仍为 true，draw 会显示结算）
+    state.mode = 'play';
+    state.endingSeen = true;
+  }
+}
+
+/**
+ * 视觉小说式演出：插画背景 + 立绘 + 底部文字框（逐字机）。
+ * 所有插画来自 ComfyUI（非像素风），缺图时退化为纯色底，文字始终可读。
+ */
+function drawStory() {
+  const st = state.story;
+  if (!st) return;
+  const scene = STORY[st.kind][st.index];
+  if (!scene) return;
+
+  // 逐字机必须在这里推进：演出时 mode !== 'play'，logicStep 不执行。
+  // （之前放在 logicStep 里导致文字永远停在第一帧。）
+  const totalCharsAll = sceneCharCount(scene);
+  st.typed = Math.min(totalCharsAll, st.typed + STORY_CHARS_PER_FRAME);
+
+  // 背景：铺满，等比裁切
+  const bgImg = STORY_ART[scene.bg];
+  if (bgImg) {
+    const sw = bgImg.width;
+    const sh = bgImg.height;
+    const scale = Math.max(VIEW_W / sw, VIEW_H / sh);
+    const dw = sw * scale;
+    const dh = sh * scale;
+    ctx.drawImage(bgImg, (VIEW_W - dw) / 2, (VIEW_H - dh) / 2, dw, dh);
+    // 压暗，保证文字可读
+    ctx.fillStyle = 'rgba(4,6,10,.42)';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  } else {
+    ctx.fillStyle = '#0a0e18';
+    ctx.fillRect(0, 0, VIEW_W, VIEW_H);
+  }
+
+  // 立绘：右侧，底部对齐（视觉小说惯例）
+  const pImg = scene.portrait ? STORY_ART[scene.portrait] : null;
+  if (pImg) {
+    const targetH = Math.round(VIEW_H * 0.86);
+    const targetW = Math.round(pImg.width * targetH / pImg.height);
+    const px = VIEW_W - targetW - 18;
+    const py = VIEW_H - targetH - 6;
+    ctx.drawImage(pImg, px, py, targetW, targetH);
+  }
+
+  // 电影感上下黑边
+  ctx.fillStyle = '#05070b';
+  ctx.fillRect(0, 0, VIEW_W, 12);
+  ctx.fillRect(0, VIEW_H - 12, VIEW_W, 12);
+
+  // 文字框
+  const boxH = 62;
+  const boxY = VIEW_H - boxH - 12;
+  ctx.fillStyle = 'rgba(6,9,14,.82)';
+  ctx.fillRect(0, boxY, VIEW_W, boxH);
+  ctx.fillStyle = 'rgba(158,200,255,.22)';
+  ctx.fillRect(0, boxY, VIEW_W, 1);
+
+  // 把已显示的字数按行切分
+  const totalChars = totalCharsAll;
+  const shownTotal = Math.min(totalChars, Math.floor(st.typed));
+  let used = 0;
+  scene.lines.forEach((line, i) => {
+    const remain = Math.max(0, shownTotal - used);
+    const visible = line.slice(0, remain);
+    used += line.length;
+    if (visible) {
+      drawText(ctx, visible, 18, boxY + 14 + i * 16, '#e8eef8', 1, '#05070b');
+    }
+  });
+
+  // 进度与提示
+  const total = STORY[st.kind].length;
+  const pageInfo = `${st.index + 1} / ${total}`;
+  drawText(ctx, pageInfo, VIEW_W - 44, boxY + boxH - 14, '#5c6b80', 1, '#05070b');
+
+  if (st.typed >= totalChars) {
+    const blink = Math.floor(state.frame / 18) % 2 === 0;
+    if (blink) {
+      const hint = 'ENTER';
+      drawText(ctx, hint, VIEW_W - 78, boxY + boxH - 14, '#9fc8ff', 1, '#05070b');
+    }
+  }
+
+  // 跳过提示
+  drawText(ctx, 'ESC SKIP', 12, VIEW_H - 6, '#4a5568', 1, '#05070b');
+}
+
 function drawTitle() {
   const bg = BACKGROUNDS.bg_title || BACKGROUNDS.bg_level;
   if (bg) {
@@ -663,6 +829,7 @@ function drawTitle() {
 
 function draw() {
   if (state.mode === 'title') { drawTitle(); return; }
+  if (state.story) { drawStory(); return; }
   // 相机取整一次：所有图层用同一个整数偏移，避免背景与角色相对抖动
   const cam = Math.round(state.camX);
   const shakeX = (Math.random() - 0.5) * state.shake;
