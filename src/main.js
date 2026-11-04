@@ -801,6 +801,35 @@ function draw() {
     const ay = Math.round(GROUND_TOP + pr.y - (pr.z || 0));
     if (ax < -16 || ax > VIEW_W + 16) continue;
     const dir = pr.vx >= 0 ? 1 : -1;
+    // 法球：紫青发光球 + 拖尾，尺寸随 age 轻微脉动（"能量不稳定"的感觉）
+    if (pr.kind === 'bolt') {
+      const pulse = 1 + Math.sin(pr.age * 0.35) * 0.18;
+      const r = Math.round(4 * pulse);        // 核心半径
+      const halo = r + 3;                     // 光晕
+      // 拖尾：沿飞行反方向渐隐
+      for (let k = 1; k <= 4; k++) {
+        const tx = ax - dir * (k * 4);
+        const alpha = 0.30 - k * 0.06;
+        if (alpha <= 0) continue;
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = '#8b4bff';
+        ctx.fillRect(tx - r, ay - r + 1, r * 2, r * 2 - 2);
+      }
+      ctx.globalAlpha = 1;
+      // 光晕
+      ctx.globalAlpha = 0.45;
+      ctx.fillStyle = '#7b3bff';
+      ctx.fillRect(ax - halo, ay - halo, halo * 2, halo * 2);
+      ctx.globalAlpha = 1;
+      // 核心（亮青）
+      ctx.fillStyle = '#1a0d2e';
+      ctx.fillRect(ax - r - 1, ay - r - 1, r * 2 + 2, r * 2 + 2);
+      ctx.fillStyle = '#b98cff';
+      ctx.fillRect(ax - r, ay - r, r * 2, r * 2);
+      ctx.fillStyle = '#e8dcff';
+      ctx.fillRect(ax - r + 1, ay - r + 1, r, r);
+      continue;
+    }
     if (pr.attack === 'throw') {
       // 飞刀：两帧交替模拟旋转，颜色偏冷，和弓手的箭区分开
       const spin = Math.floor(pr.age / 3) % 2;

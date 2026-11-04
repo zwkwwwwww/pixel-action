@@ -305,6 +305,8 @@ function spawnProjectiles(world) {
       age: 0,
       life: pr.life,
       attack: a.attack,
+      // 外观类型：箭用默认(undefined)，法球用 'bolt'，飞刀用 'throw'
+      kind: pr.kind,
     });
     world.events.push({
       type: 'shoot', uid: a.uid, x: a.x, y: a.y, side: a.side, facing: a.facing,

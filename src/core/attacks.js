@@ -93,6 +93,22 @@ export const ATTACKS = {
     chainTo: null,
     telegraph: { radius: 36, color: '#ff5a3c' },
   },
+  bolt: {
+    // 召唤者专用：法杖射出暗影法球。
+    // 与弓手的箭区分：更慢（玩家能看清）、更大（判定更宽）、更痛、
+    // 且带起手预警圈 —— 法术应该有"仪式感"，而不是像箭一样瞬时飞来。
+    startup: 14, active: 2, recovery: 20,
+    dmg: 16, hitstun: 22, kbX: 1.1, launch: 0,
+    reach: 0, halfDepth: 0,
+    meterGain: 0, meterCost: 0,
+    chainTo: null,
+    // 法球从法杖宝珠位置射出（高于弓心），体积更大所以 halfDepth 更宽
+    projectile: {
+      speed: 2.6, life: 170, offsetX: 14, offsetZ: 40, halfDepth: 12,
+      kind: 'bolt',
+    },
+    telegraph: { radius: 34, color: '#c74bff' },
+  },
   shoot: {
     // 弓手专用：没有近战判定盒，靠 projectile 在 active 帧生成一支箭
     startup: 8, active: 1, recovery: 16,
