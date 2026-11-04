@@ -22,7 +22,9 @@ export const STORY = {
   ],
   ending: [
     {
-      bg: 'bg_ending', portrait: 'hero_portrait',
+      // 结局刻意不用立绘：黎明空塔 + 文字，"回声停止"的留白比人影更有力；
+      // 而且立绘自带的暗角叠在明亮天空上会显脏。
+      bg: 'bg_ending', portrait: null,
       lines: ['THE ECHO STOPS.', 'THE MOON IS QUIET. FOR NOW.'],
     },
   ],

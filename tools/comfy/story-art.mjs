@@ -88,30 +88,49 @@ im.save(sys.argv[2], optimize=True)
 }
 
 /**
- * 立绘：把接近纯黑的背景抠成透明。
- * 阈值法对 "isolated on pure black" 的图很稳；再对边缘做一次羽化避免硬锯齿。
+ * 立绘抠图：**从画面四边做洪水填充**，只抠掉与边缘连通的暗区。
+ *
+ * 为什么不用纯阈值：角色本身有大量暗部（深蓝外套、靴子、剑刃），
+ * 阈值法会把这些也抠成透明，只剩一个幽灵轮廓（已实际发生）。
+ * 洪水填充能区分"背景黑"和"角色内部的黑"——后者被亮部包围，不会被填到。
+ *
+ * 边缘处理：与背景相邻的 1~2 像素按亮度给半透明，消除硬锯齿。
  */
 function finishPortrait(raw, out) {
   execFileSync('python', ['-c', `
 import sys
+import numpy as np
 from PIL import Image
+
+# 不做色键抠图。
+#
+# 为什么放弃：AI 生成的立绘自带**暗角/轮廓光**，那些暗部和角色粗壮相连 ——
+# 亮度阈值会把角色的深色外套一起吃掉（"抠多了"）；
+# 洪水填充虽能保住角色，却留下一圈和角色连在一起的黑色残块（亮背景上极明显）。
+#
+# 改用**椭圆软蒙版**：保留原图，只让边缘平滑淡出。
+# 立绘自带的暗背景于是成为刻意的暗角，在暗场景里完全隐形。
+# 代价：它不适合直接叠在明亮天空上 —— 所以结局场景不使用立绘。
 im = Image.open(sys.argv[1]).convert('RGBA')
 w, h = im.size
-target_w = 420
-target_h = round(h * target_w / w)
-im = im.resize((target_w, target_h), Image.LANCZOS)
-px = im.load()
-TH = 26          # 低于这个亮度视为背景
-for y in range(target_h):
-    for x in range(target_w):
-        r, g, b, a = px[x, y]
-        lum = (r * 299 + g * 587 + b * 114) // 1000
-        if lum <= TH:
-            px[x, y] = (r, g, b, 0)
-        elif lum < TH * 2:
-            # 边缘过渡：按亮度给半透明，避免黑边
-            px[x, y] = (r, g, b, int(255 * (lum - TH) / TH))
-im.save(sys.argv[2], optimize=True)
+tw = 460
+th = round(h * tw / w)
+im = im.resize((tw, th), Image.LANCZOS)
+a = np.asarray(im).copy()
+
+ys, xs = np.mgrid[0:th, 0:tw]
+cx, cy = (tw - 1) / 2.0, (th - 1) / 2.0
+nx = (xs - cx) / (tw * 0.53)
+ny = (ys - cy) / (th * 0.55)
+r = np.sqrt(nx * nx + ny * ny)
+
+# smoothstep：r<=0.82 全不透明，r>=1.05 全透明
+t = np.clip((r - 0.82) / (1.05 - 0.82), 0.0, 1.0)
+fade = 1.0 - (t * t * (3.0 - 2.0 * t))
+a[..., 3] = (a[..., 3].astype(float) * fade).astype(np.uint8)
+
+Image.fromarray(a, 'RGBA').save(sys.argv[2], optimize=True)
+print(f'  soft-mask portrait: {tw}x{th} (no color keying)')
 `, raw, out], { stdio: 'inherit' });
 }
 
@@ -119,8 +138,10 @@ const argv = process.argv.slice(2);
 const opt = (n, d) => { const i = argv.indexOf(`--${n}`); return i === -1 ? d : argv[i + 1]; };
 const only = opt('only') ? new Set(opt('only').split(',')) : null;
 const force = argv.includes('--force');
+const rematte = argv.includes('--rematte');
 
-await ping();
+// --rematte 只重做抠图，不需要 ComfyUI 在线
+if (!argv.includes('--rematte')) await ping();
 mkdirSync('art-source/comfy/story', { recursive: true });
 mkdirSync('assets/story', { recursive: true });
 
@@ -129,9 +150,9 @@ for (const it of ITEMS) {
   const isPortrait = it.id.endsWith('_portrait');
   const raw = `art-source/comfy/story/${it.id}.png`;
   const fin = `assets/story/${it.id}.png`;
-  if (!force && existsSync(fin)) { console.log(`skip ${it.id}`); continue; }
+  if (!rematte && !force && existsSync(fin)) { console.log(`skip ${it.id}`); continue; }
 
-  if (force || !existsSync(raw)) {
+  if (!rematte && (force || !existsSync(raw))) {
     const t0 = Date.now();
     const res = await runAndSave(workflow(it.prompt, it.seed, it.w, it.h), raw, {
       timeoutMs: Number(process.env.COMFY_TIMEOUT_MS || 900000),
