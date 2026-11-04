@@ -22,6 +22,12 @@ export const AI_PROFILES = {
     type: 'melee', speed: 0.78, turnSpeed: 1.2,
     range: 30, depthRange: 18, cooldown: 96, attack: 'light1',
   },
+  bossRanged: {
+    // 召唤者：**远程** Boss。保持中远距离射法球，太近就后撤。
+    // 这样"持法杖的法师"的行为与外观一致；近战威胁交给它召唤的援军。
+    type: 'ranged', speed: 0.72, turnSpeed: 1.0,
+    range: 170, minDist: 76, depthRange: 26, cooldown: 84, attack: 'bolt',
+  },
   shield: {
     // 盾兵：慢、正面硬（伤害 -80%），必须绕后或蓄力重斩破防
     type: 'melee', speed: 0.62, turnSpeed: 0.8,

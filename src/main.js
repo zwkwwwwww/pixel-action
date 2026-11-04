@@ -93,7 +93,7 @@ const sheetOf = (kind) => SHEETS[kind] || SHEETS[SHEET_ALIAS[kind]] || null;
 
 const prevPos = new Map();
 (async () => {
-  const want = ['hero', 'grunt', 'brute', 'ranger', 'shield', 'boss', 'boss_warden', 'boss_berserker'];
+  const want = ['hero', 'grunt', 'brute', 'ranger', 'shield', 'flyer', 'crate', 'boss', 'boss_warden', 'boss_berserker'];
   await Promise.all(want.map(async (name) => {
     try {
       SHEETS[name] = await loadSprites(`assets/sprites/${name}`);
@@ -541,7 +541,7 @@ function drawFlyer(ctx, a, sx, sy) {
 }
 
 const SPRITE_H = {
-  hero: 56, grunt: 46, brute: 52, ranger: 48, shield: 52,
+  hero: 56, grunt: 46, brute: 52, ranger: 48, shield: 52, flyer: 40, crate: 30,
   boss: 112, boss_warden: 112, boss_berserker: 112,
 };
 // 小怪/精英头顶血条：保持显示（上一轮曾误判成「那根红线」而关闭，已恢复；想隐藏改成 false）
@@ -611,30 +611,54 @@ function drawTitle() {
   const sub = 'A 2.5D PIXEL ACTION SLICE';
   drawText(ctx, sub, (VIEW_W - textWidth(sub, 1)) / 2, 140, '#8fa6c2', 1, '#05070b');
 
-  const pulse = 0.35 + 0.65 * Math.abs(Math.sin(state.frame / 34));
-  ctx.globalAlpha = pulse;
-  const press = 'PRESS ENTER TO START';
-  drawText(ctx, press, (VIEW_W - textWidth(press, 1)) / 2, 196, '#ffd166', 1, '#05070b');
-  ctx.globalAlpha = 1;
+  // ——— 标题以下的文字按固定行距排布，避免叠字 ———
+  // 行距统一 18px：像素字高 8px，留 10px 间隙读起来不挤。
+  // 曾经 PRESS ENTER 和难度行都放在 y=196，直接叠在一起。
+  const ROW = {
+    best: 156,
+    press: 174,
+    diff: 194,
+    diffHint: 208,
+    keysBar: 224,
+    keysText: 230,
+  };
 
   if (state.records.bestTimeMs !== null) {
     const best = `BEST ${formatTime(state.records.bestTimeMs)}   CLEARS ${state.records.clears}`;
-    drawText(ctx, best, (VIEW_W - textWidth(best, 1)) / 2, 178, '#9fb4d0', 1, '#05070b');
+    drawText(ctx, best, (VIEW_W - textWidth(best, 1)) / 2, ROW.best, '#9fb4d0', 1, '#05070b');
   }
 
+  const pulse = 0.35 + 0.65 * Math.abs(Math.sin(state.frame / 34));
+  ctx.globalAlpha = pulse;
+  const press = 'PRESS ENTER TO START';
+  drawText(ctx, press, (VIEW_W - textWidth(press, 1)) / 2, ROW.press, '#ffd166', 1, '#05070b');
+  ctx.globalAlpha = 1;
+
   // 难度选择：高亮当前选项，1/2/3 切换
-  const diffLine = DIFFICULTIES
-    .map((d, i) => (d === state.difficulty ? `[${d.label}]` : ` ${d.label} `))
-    .join('  ');
-  const dw = textWidth(diffLine, 1);
-  drawText(ctx, diffLine, (VIEW_W - dw) / 2, 196, '#ffd166', 1, '#05070b');
+  // 难度行高亮：**不用方括号** —— 像素字体里 '[' ']' '<' '>' '=' '|' 等符号
+  // 字形是全空白占位（渲染出来什么都没有），所以改用「亮色 + 下划线」。
+  const curId = state.difficulty && state.difficulty.id;
+  const GAP = 18;
+  const items = DIFFICULTIES.map((d) => ({ d, w: textWidth(d.label, 1) }));
+  const totalW = items.reduce((sum, it) => sum + it.w, 0) + GAP * (items.length - 1);
+  let dx = (VIEW_W - totalW) / 2;
+  for (const it of items) {
+    const active = it.d.id === curId;
+    drawText(ctx, it.d.label, dx, ROW.diff, active ? '#ffd166' : '#5c6b80', 1, '#05070b');
+    if (active) {
+      ctx.fillStyle = '#ffd166';
+      ctx.fillRect(Math.round(dx), ROW.diff + 10, Math.round(it.w), 1);
+    }
+    dx += it.w + GAP;
+  }
+
   const diffHint = '1 / 2 / 3  SELECT DIFFICULTY';
-  drawText(ctx, diffHint, (VIEW_W - textWidth(diffHint, 1)) / 2, 210, '#6f88a6', 1, '#05070b');
+  drawText(ctx, diffHint, (VIEW_W - textWidth(diffHint, 1)) / 2, ROW.diffHint, '#6f88a6', 1, '#05070b');
 
   const keys = 'WASD MOVE   J ATTACK   K ROLL   L SPECIAL   U KNIFE   SPACE JUMP   M MUTE';
   ctx.fillStyle = 'rgba(5,7,12,.6)';
-  ctx.fillRect(0, 226, VIEW_W, 14);
-  drawText(ctx, keys, (VIEW_W - textWidth(keys, 1)) / 2, 232, '#6f88a6', 1, '#05070b');
+  ctx.fillRect(0, ROW.keysBar, VIEW_W, 14);
+  drawText(ctx, keys, (VIEW_W - textWidth(keys, 1)) / 2, ROW.keysText, '#6f88a6', 1, '#05070b');
 }
 
 function draw() {
@@ -693,27 +717,39 @@ function draw() {
   ctx.translate(Math.round(shakeX), Math.round(shakeY));
 
   // —— 地面补给箱 ——
-  // 画在角色之前（角色可以走过它），用"呼吸"缩放提示可交互
+  // 用 Blender 管线产出的精灵表（crate），带呼吸浮动；
+  // 表缺失时才回退到程序化方块，保证不会凭空消失。
   for (const pk of level.pickups || []) {
     if (pk.taken) continue;
     const bx = Math.round(pk.x - cam);
-    if (bx < -20 || bx > VIEW_W + 20) continue;
+    if (bx < -24 || bx > VIEW_W + 24) continue;
     const by = Math.round(GROUND_TOP + pk.y);
     const bob = Math.sin(state.frame * 0.08 + pk.x) * 1.5;
-    const cy = Math.round(by - 6 + bob);
-    // 影子
+
+    // 影子（始终画，锚定在地面）
     ctx.fillStyle = 'rgba(0,0,0,.32)';
-    ctx.fillRect(bx - 7, by - 1, 14, 3);
-    // 箱体
-    ctx.fillStyle = '#0a0d12';
-    ctx.fillRect(bx - 8, cy - 9, 16, 13);
-    ctx.fillStyle = '#3c6b4a';
-    ctx.fillRect(bx - 7, cy - 8, 14, 11);
-    // 箱盖高光 + 十字标记
-    ctx.fillStyle = '#6fbe8a';
-    ctx.fillRect(bx - 7, cy - 8, 14, 2);
-    ctx.fillRect(bx - 1, cy - 6, 2, 6);
-    ctx.fillRect(bx - 4, cy - 4, 8, 2);
+    ctx.fillRect(bx - 8, by - 1, 16, 3);
+
+    const crate = SHEETS.crate;
+    if (crate) {
+      const clip = crate.meta.clips.idle;
+      const idx = Math.floor(state.frame / 8) % clip.frames.length;
+      const f = clip.frames[idx];
+      const [cw, ch] = crate.meta.cell;
+      const [ax, ay] = crate.meta.anchor;
+      ctx.drawImage(crate.img, f[0], f[1], cw, ch,
+        bx - ax, Math.round(by - ay + bob), cw, ch);
+    } else {
+      const cy = Math.round(by - 6 + bob);
+      ctx.fillStyle = '#0a0d12';
+      ctx.fillRect(bx - 8, cy - 9, 16, 13);
+      ctx.fillStyle = '#3c6b4a';
+      ctx.fillRect(bx - 7, cy - 8, 14, 11);
+      ctx.fillStyle = '#6fbe8a';
+      ctx.fillRect(bx - 7, cy - 8, 14, 2);
+      ctx.fillRect(bx - 1, cy - 6, 2, 6);
+      ctx.fillRect(bx - 4, cy - 4, 8, 2);
+    }
   }
 
   // 深度排序：y 大的后画（更靠前）
@@ -758,12 +794,12 @@ function draw() {
           ctx.globalAlpha = 1;
         }
       } else {
-        // 飞行敌人：暂无 Blender 模型，用程序化绘制（翅膀扇动 + 悬空）
-        // 立刻能试玩法；等专属精灵表产出后删掉这个分支即可
-        if (a.flyer) {
-          drawFlyer(ctx, a, sx, sy - airborne);
+        // 飞行敌人现在有专属精灵表（Blender 管线产出），优先用表；
+        // 表缺失时才回退到程序化绘制，避免整个敌人消失。
+        if (drawActorSprite(ctx, sheetOf(a.kind), a, sx, sy, moving)) {
           state.art.drawnSprites++;
-        } else if (drawActorSprite(ctx, sheetOf(a.kind), a, sx, sy, moving)) {
+        } else if (a.flyer) {
+          drawFlyer(ctx, a, sx, sy - airborne);
           state.art.drawnSprites++;
         } else {
           drawBlock(

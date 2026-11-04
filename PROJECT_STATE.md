@@ -26,10 +26,10 @@
 
 ## 当前状态
 
-- 当前 Phase：**第 37 轮：召唤者改用法术攻击（bolt），待人类验收**
+- 当前 Phase：**第 38 轮：标题布局修复 + 召唤者远程化 + 飞行敌人/补给箱走工作流**
 - 当前分支：`main`，tag 见 `phase-slice-2`
 - 运行状态：**正常**
-- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **181 pass / 0 fail**
+- 最近测试结果：`node --test "tests/**/*.test.mjs"` → **186 pass / 0 fail**
 - 第 2 轮四项改动与证据：
   1. **音效**：短音效从 ACE-Step 换成 DSP 合成（`tools/sfx-synth.py`），BGM 仍用 ACE。
      起音时间 swing 375ms→4.4ms、hit 666ms→1.0ms、dodge 质心 180→1859Hz、death 旧版峰值仅 0.011（几乎无声）→新版可听。

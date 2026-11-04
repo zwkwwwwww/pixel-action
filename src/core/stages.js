@@ -54,13 +54,13 @@ export const STAGE_2 = {
   boss: {
     triggerX: 2100,
     spawn: {
-      kind: 'boss_warden', ai: AI_PROFILES.boss, x: 2268, y: 41, hp: 560, maxHp: 560,
-      attacks: ['slam', 'bolt', 'light2'],
+      kind: 'boss_warden', ai: AI_PROFILES.bossRanged, x: 2268, y: 41, hp: 560, maxHp: 560,
+      attacks: ['bolt'],
       phases: [
         // 一阶段：半血召唤援军，逼玩家分心清场
         { at: 0.6, summon: 2 },
         // 二阶段：召唤者亲自下场，提速 + 更短的出手间隔
-        { at: 0.3, speed: 1.35, cooldown: 0.65, attacks: ['bolt', 'special', 'light2'] },
+        { at: 0.3, speed: 1.35, cooldown: 0.65, attacks: ['bolt', 'special'] },
       ],
       speedX: 0.9, speedY: 0.65, bodyHalfW: 20, bodyHalfD: 15,
     },

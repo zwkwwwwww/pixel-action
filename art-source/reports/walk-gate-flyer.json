@@ -1,0 +1,22 @@
+{
+  "sheet": "assets\\sprites\\flyer.json",
+  "clip": "walk",
+  "frames": 12,
+  "spreads": [
+    7,
+    6,
+    5,
+    5,
+    6,
+    7,
+    8,
+    7,
+    6,
+    5,
+    5,
+    6
+  ],
+  "threshold": 2,
+  "consecutiveStraightPairs": [],
+  "pass": true
+}

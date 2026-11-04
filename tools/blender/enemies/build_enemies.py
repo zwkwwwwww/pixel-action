@@ -1820,8 +1820,210 @@ def build_shield():
     return cfg, bones, "ShieldRig", "ShieldMesh"
 
 
+def build_flyer():
+    """飞行敌人：悬空的恶魔翼手。
+
+    设计要点（远看就能认出"这个在天上，得跳起来或扔刀"）：
+      * 没有腿 —— 下肢收成一条尾，剪影下半身是锥形而不是两条腿
+      * 一对薄膜翅膀绑在 armL/armR 上，靠手臂旋转做扇动
+      * 身体是椭圆而不是方块，头部小而前突，两只红眼
+      * 整体比地面单位小一圈（height 1.15），因为它悬在 z=34 处
+
+    骨架沿用敌人的 9 骨（root/hips/spine/head/armR/armL/legR/legL/weapon），
+    weapon 骨不挂任何几何（它没有武器），这样 clips 能直接复用。
+    """
+    global BASE, MOTION, DEATH_F
+    height = 1.15
+    MOTION = height / 1.70
+    DEATH_F = 0.72
+
+    M = {
+        "hide": mat("fl_hide", (0.290, 0.180, 0.330), rough=0.72),
+        "hide_d": mat("fl_hide_d", (0.150, 0.090, 0.190), rough=0.78),
+        "hide_l": mat("fl_hide_l", (0.420, 0.280, 0.460), rough=0.68),
+        "wing": mat("fl_wing", (0.360, 0.130, 0.250), rough=0.62, spec=0.30),
+        "wing_d": mat("fl_wing_d", (0.190, 0.060, 0.140), rough=0.70),
+        "bone": mat("fl_bone", (0.700, 0.660, 0.580), rough=0.55),
+        "claw": mat("fl_claw", (0.820, 0.790, 0.700), rough=0.40),
+    }
+    M["eye"] = emissive("fl_eye", (1.0, 0.18, 0.10), 3.4)
+
+    # —— 躯干：椭圆身体，没有腿 ——
+    ico("body", (0.010, 0.0, 0.760), 0.260, (1.00, 0.82, 1.15), M["hide"], "spine", subdiv=2)
+    ico("chest", (0.060, 0.0, 0.900), 0.185, (0.95, 0.78, 0.90), M["hide_l"], "spine", subdiv=1)
+    # 尾：从髋部往下收成尖
+    tube("tail_a", (0.0, 0.0, 0.640), (-0.060, 0.0, 0.420), 0.115, 0.070, 6,
+         M["hide_d"], "hips")
+    tube("tail_b", (-0.060, 0.0, 0.420), (-0.140, 0.0, 0.230), 0.070, 0.014, 5,
+         M["hide_d"], "hips")
+    # 尾刺
+    prism("tail_spike", (-0.140, 0.0, 0.235), Vector((0, 1, 0)), Vector((0, 0, 1)),
+          Vector((1, 0, 0)),
+          [(-0.030, 0.0), (0.030, 0.0), (0.0, 0.090)], 0.030, M["claw"], "hips")
+
+    # —— 头：小而前突 ——
+    ico("skull", (0.150, 0.0, 1.010), 0.150, (1.10, 0.92, 0.92), M["hide"], "head", subdiv=2)
+    tube("snout", (0.220, 0.0, 0.985), (0.330, 0.0, 0.955), 0.095, 0.045, 6,
+         M["hide_d"], "head")
+    # 两只红眼（发光）
+    for side in (-1, 1):
+        box_frame("eye_%d" % side, (0.255, 0.062 * side, 1.015),
+                  Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+                  0.020, 0.030, 0.026, M["eye"], "head")
+        # 犄角向后弯
+        tube("horn_%d" % side, (0.075, 0.085 * side, 1.090),
+             (-0.060, 0.140 * side, 1.205), 0.052, 0.010, 5, M["bone"], "head")
+
+    # —— 翅膀：绑在 armL/armR，靠手臂旋转扇动 ——
+    # 膜面用 prism 做成扇形，边缘加几根骨刺
+    for side, tag, bone in ((-1, "R", "armR"), (1, "L", "armL")):
+        root_pt = Vector((0.030, 0.145 * side, 0.930))
+        tip_pt = Vector((-0.180, 0.680 * side, 1.060))
+        u = (tip_pt - root_pt).normalized()
+        v = Vector((0, 0, 1))
+        n = u.cross(v).normalized()
+        # 主膜：从肩根张到翼尖的扇形
+        prism("wing_%s" % tag, tuple(root_pt), u, v, n,
+              [(0.0, 0.135), (0.34, 0.180), (0.62, 0.120), (0.86, 0.030),
+               (0.86, -0.030), (0.52, -0.075), (0.0, -0.090)],
+              0.022, M["wing"], bone)
+        # 翼骨：一根粗的 + 两根细的
+        tube("wing_arm_%s" % tag, tuple(root_pt), tuple(root_pt + u * 0.86),
+             0.036, 0.014, 5, M["bone"], bone)
+        for k, frac in enumerate((0.34, 0.62)):
+            tube("wing_rib_%d_%s" % (k, tag), tuple(root_pt + u * frac),
+                 tuple(root_pt + u * frac + v * (0.16 - k * 0.03) + n * 0.004),
+                 0.018, 0.008, 4, M["bone"], bone)
+        # 翼尖爪
+        tube("wing_claw_%s" % tag, tuple(root_pt + u * 0.84),
+             tuple(root_pt + u * 0.99 + v * 0.02), 0.020, 0.006, 4, M["claw"], bone)
+
+    # —— 下肢：收起的爪（视觉上暗示"它没有站立腿"）——
+    for side, tag in ((-1, "R"), (1, "L")):
+        tube("leg_%s" % tag, (0.010, 0.075 * side, 0.600),
+             (-0.040, 0.090 * side, 0.470), 0.075, 0.040, 5, M["hide_d"], "leg" + tag)
+        for c in range(3):
+            tube("claw_%s_%d" % (tag, c),
+                 (-0.040, 0.090 * side, 0.470),
+                 (-0.130 - c * 0.02, (0.055 + c * 0.035) * side, 0.430),
+                 0.020, 0.005, 4, M["claw"], "leg" + tag)
+
+    # 悬浮姿态：手臂外展让翅膀张开
+    BASE = {
+        "spine": {"ry": 12.0},
+        "head": {"ry": -8.0},
+        "armR": {"rz": -18.0, "ry": -10.0},
+        "armL": {"rz": 18.0, "ry": 10.0},
+        "legR": {"ry": -18.0},
+        "legL": {"ry": 18.0},
+    }
+
+    bones = [
+        {"name": "root", "head": (0, 0, 0), "tail": (0, 0, 0.18), "deform": False},
+        {"name": "hips", "head": (0, 0, 0.640), "tail": (0, 0, 0.760), "parent": "root"},
+        {"name": "spine", "head": (0, 0, 0.760), "tail": (0, 0, 0.960), "parent": "hips",
+         "connect": True},
+        {"name": "head", "head": (0, 0, 0.960), "tail": (0, 0, 1.120), "parent": "spine",
+         "connect": True},
+        {"name": "armR", "head": (0.030, -0.145, 0.930), "tail": (-0.180, -0.680, 1.060),
+         "parent": "spine"},
+        {"name": "armL", "head": (0.030, 0.145, 0.930), "tail": (-0.180, 0.680, 1.060),
+         "parent": "spine"},
+        {"name": "legR", "head": (0.010, -0.075, 0.600), "tail": (-0.040, -0.090, 0.470),
+         "parent": "hips"},
+        {"name": "legL", "head": (0.010, 0.075, 0.600), "tail": (-0.040, 0.090, 0.470),
+         "parent": "hips"},
+        # 无武器骨：给个退化定义满足骨架契约（不挂几何）
+        {"name": "weapon", "head": (0, 0, 0.9), "tail": (0, 0, 0.95), "parent": "armR"},
+    ]
+    cfg = {
+        "kind": "flyer", "height": height, "render_px": 384, "cell": 96,
+        "anchor": (48, 88), "target_px": 40,
+    }
+    return cfg, bones, "FlyerRig", "FlyerMesh"
+
+
+def build_crate():
+    """补给箱：程序化素材的最后一块 —— 走同一条 Blender 管线。
+
+    造型：木箱 + 铁包角 + 顶部十字补给标记 + 正面一条绿色指示条，
+    远看就能认出"这是能捡的东西"。
+    只有 idle（轻微浮动）一个姿态，其它剪辑复用 idle 让 pack 管线可用。
+    """
+    global BASE, MOTION, DEATH_F
+    height = 0.55
+    MOTION = height / 1.70
+    DEATH_F = 1.0
+
+    M = {
+        "wood": mat("cr_wood", (0.300, 0.205, 0.115), rough=0.80),
+        "wood_d": mat("cr_wood_d", (0.180, 0.120, 0.065), rough=0.84),
+        "iron": mat("cr_iron", (0.330, 0.335, 0.360), rough=0.44, metal=0.60, spec=0.5),
+        "iron_d": mat("cr_iron_d", (0.175, 0.180, 0.200), rough=0.52, metal=0.5),
+        "mark": mat("cr_mark", (0.180, 0.620, 0.320), rough=0.50),
+    }
+    M["glow"] = emissive("cr_glow", (0.30, 0.90, 0.40), 0.9)
+
+    W = 0.30   # 半宽
+    D = 0.24   # 半深
+    H = 0.52   # 全高
+
+    # 箱体
+    taper_box("crate_body", (0.0, 0.0, 0.0), (0.0, 0.0, H),
+              W * 2, D * 2, W * 2, D * 2, M["wood"], "root")
+    # 四条竖铁包角
+    for sx in (-1, 1):
+        for sy in (-1, 1):
+            taper_box("crate_corner_%d_%d" % (sx, sy),
+                      (sx * (W - 0.012), sy * (D - 0.012), 0.0),
+                      (sx * (W - 0.012), sy * (D - 0.012), H),
+                      0.030, 0.030, 0.030, 0.030, M["iron"], "root")
+    # 上下铁箍
+    for z, tag in ((0.035, "lo"), (H - 0.035, "hi")):
+        taper_box("crate_band_" + tag, (0.0, 0.0, z), (0.0, 0.0, z + 0.045),
+                  W * 2 + 0.014, D * 2 + 0.014, W * 2 + 0.014, D * 2 + 0.014,
+                  M["iron_d"], "root")
+    # 正面（+X）补给标记：一个十字
+    box_frame("crate_cross_v", (W + 0.006, 0.0, H * 0.55),
+              Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+              0.012, 0.040, 0.200, M["mark"], "root")
+    box_frame("crate_cross_h", (W + 0.006, 0.0, H * 0.55),
+              Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+              0.012, 0.130, 0.045, M["mark"], "root")
+    # 顶盖边缘的发光条：暗示"里面有能量"
+    box_frame("crate_glow", (0.0, 0.0, H + 0.004),
+              Vector((1, 0, 0)), Vector((0, 1, 0)), Vector((0, 0, 1)),
+              0.10, W * 0.55, 0.008, M["glow"], "root")
+
+    BASE = {}   # 静止道具，没有站姿修饰
+
+    bones = [
+        {"name": "root", "head": (0, 0, 0), "tail": (0, 0, 0.20), "deform": False},
+        {"name": "hips", "head": (0, 0, 0.20), "tail": (0, 0, 0.32), "parent": "root"},
+        {"name": "spine", "head": (0, 0, 0.32), "tail": (0, 0, 0.44), "parent": "hips",
+         "connect": True},
+        {"name": "head", "head": (0, 0, 0.44), "tail": (0, 0, 0.56), "parent": "spine",
+         "connect": True},
+        {"name": "armR", "head": (0.06, -0.20, 0.36), "tail": (0.12, -0.26, 0.24),
+         "parent": "spine"},
+        {"name": "armL", "head": (0.06, 0.20, 0.36), "tail": (0.12, 0.26, 0.24),
+         "parent": "spine"},
+        {"name": "legR", "head": (0.0, -0.12, 0.20), "tail": (0.04, -0.14, 0.0),
+         "parent": "hips"},
+        {"name": "legL", "head": (0.0, 0.12, 0.20), "tail": (0.04, 0.14, 0.0),
+         "parent": "hips"},
+        {"name": "weapon", "head": (0.1, 0, 0.3), "tail": (0.12, 0, 0.34), "parent": "armR"},
+    ]
+    cfg = {
+        "kind": "crate", "height": height, "render_px": 384, "cell": 64,
+        "anchor": (32, 56), "target_px": 30,
+    }
+    return cfg, bones, "CrateRig", "CrateMesh"
+
+
 BUILDERS = {"grunt": build_grunt, "brute": build_brute,
-            "ranger": build_ranger, "shield": build_shield,
+            "ranger": build_ranger, "shield": build_shield, "flyer": build_flyer,
+            "crate": build_crate,
             "boss": build_boss, "warden": build_warden,
             "berserker": build_berserker}
 
