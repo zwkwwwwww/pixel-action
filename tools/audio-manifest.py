@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import wave
 from pathlib import Path
 
@@ -20,12 +21,36 @@ IDS = [
 ]
 
 
+FFMPEG = Path(r"D:\Program Files (x86)\FormatFactory\ffmpeg.exe")
+
+
 def duration(path: Path) -> float | None:
-    if path.suffix != ".wav":
+    """音频时长：wav 直接读头，mp3 用 ffmpeg 输出的 Duration 行。
+
+    早先只对 wav 返回时长，导致 BGM（mp3）在清单里没有 seconds 字段，
+    测试无法守护"BGM 不能太短"。这里补齐。
+    （本机只有 ffmpeg.exe，没有 ffprobe.exe，所以解析 stderr 而不是用 -show_entries。）
+    """
+    if path.suffix == ".wav":
+        try:
+            with wave.open(str(path), "rb") as w:
+                return round(w.getnframes() / w.getframerate(), 3)
+        except Exception:
+            return None
+
+    if not FFMPEG.exists():
         return None
     try:
-        with wave.open(str(path), "rb") as w:
-            return round(w.getnframes() / w.getframerate(), 3)
+        import subprocess
+        out = subprocess.run(
+            [str(FFMPEG), "-hide_banner", "-i", str(path)],
+            capture_output=True, text=True, timeout=30,
+        )
+        m = re.search(r"Duration:\s*(\d+):(\d+):(\d+\.?\d*)", out.stderr)
+        if not m:
+            return None
+        hh, mm, ss = int(m.group(1)), int(m.group(2)), float(m.group(3))
+        return round(hh * 3600 + mm * 60 + ss, 3)
     except Exception:
         return None
 

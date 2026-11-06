@@ -1,6 +1,7 @@
 // 用本地 ComfyUI 的 ACE-Step 1.5 生成游戏音效与 BGM（不引外部版权素材）。
 // 用法: node tools/comfy/audio-batch.mjs [--only sfx_hit,bgm_battle] [--force]
 import { writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 
 const COMFY = process.env.COMFY_URL || 'http://127.0.0.1:8888';
@@ -106,6 +107,15 @@ for (let i = 0; i < AUDIO.length; i++) {
   }
 }
 
-writeFileSync(resolve(outDir, 'manifest.json'), JSON.stringify(manifest, null, 2));
+// 不能在这里写 manifest！
+// 本脚本只生成 BGM/部分音效，而 manifest 要登记**全部**音频资产。
+// 之前这里直接覆盖 manifest.json，导致跑完 BGM 生成后所有 SFX 条目消失，
+// 游戏里 playSfx 找不到 buffer，表现为"完全没有攻击音效"。
+// 统一交给 tools/audio-manifest.py 按实际文件重建。
+try {
+  execFileSync(process.env.PYTHON || 'python', [resolve('tools/audio-manifest.py')], { stdio: 'inherit' });
+} catch (e) {
+  console.warn('[warn] 重建 manifest 失败，请手动运行 python tools/audio-manifest.py', e.message);
+}
 console.log(`\n完成: 新生成 ${done} / 跳过 ${skipped} / 失败 ${failed} → ${outDir}`);
 if (failed) process.exit(1);
