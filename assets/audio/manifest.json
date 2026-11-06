@@ -1,77 +1,12 @@
 [
   {
-    "id": "sfx_hit",
-    "file": "sfx_hit.wav",
-    "version": "b92e0218bb87",
-    "seconds": 0.17
-  },
-  {
-    "id": "sfx_hit_heavy",
-    "file": "sfx_hit_heavy.wav",
-    "version": "3cef378ba653",
-    "seconds": 0.22
-  },
-  {
-    "id": "sfx_hurt",
-    "file": "sfx_hurt.wav",
-    "version": "ec21dfe67581",
-    "seconds": 0.28
-  },
-  {
-    "id": "sfx_bow",
-    "file": "sfx_bow.wav",
-    "version": "9371403fdd5e",
-    "seconds": 0.22
-  },
-  {
-    "id": "sfx_dodge",
-    "file": "sfx_dodge.wav",
-    "version": "e9695ab045f7",
-    "seconds": 0.16
-  },
-  {
-    "id": "sfx_death",
-    "file": "sfx_death.wav",
-    "version": "80dbe56c5944",
-    "seconds": 0.5
-  },
-  {
-    "id": "sfx_special",
-    "file": "sfx_special.wav",
-    "version": "1ae3c941ac8b",
-    "seconds": 0.9
-  },
-  {
-    "id": "sfx_victory",
-    "file": "sfx_victory.mp3",
-    "version": "e4be99955aa7"
-  },
-  {
-    "id": "sfx_jump",
-    "file": "sfx_jump.wav",
-    "version": "b94c9fb84e62",
-    "seconds": 0.14
-  },
-  {
-    "id": "sfx_knife",
-    "file": "sfx_knife.wav",
-    "version": "22045cb38901",
-    "seconds": 0.18
-  },
-  {
-    "id": "sfx_pickup",
-    "file": "sfx_pickup.wav",
-    "version": "0f1ab1df860e",
-    "seconds": 0.2
-  },
-  {
     "id": "bgm_battle",
-    "file": "bgm_battle.mp3",
-    "version": "91e7b9d9e7e9"
+    "seconds": 90,
+    "file": "bgm_battle.mp3"
   },
   {
     "id": "bgm_boss",
-    "file": "bgm_boss.mp3",
-    "version": "4ab85d614f1c"
+    "seconds": 90,
+    "file": "bgm_boss.mp3"
   }
 ]

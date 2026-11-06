@@ -24,8 +24,10 @@ const AUDIO = [
   ['sfx_special', 3, 'dark energy slash burst, low rumble and sharp magic crack, game special attack sound, no music', 120, 'E minor'],
   ['sfx_death', 2, 'low dying groan and armor clatter, dark fantasy enemy defeat sound, no music', 90, 'C minor'],
   ['sfx_victory', 4, 'short dark fantasy victory stinger, triumphant brass and choir hit, game win jingle', 120, 'A major'],
-  ['bgm_battle', 32, 'dark fantasy beat em up battle music, driving war drums, low strings ostinato, rusted industrial percussion, tense and heroic, instrumental', 132, 'D minor'],
-  ['bgm_boss', 28, 'boss battle music, ominous choir, heavy taiko drums, distorted brass, relentless, instrumental', 140, 'C minor'],
+  // BGM 加长到 90s：32s 在清版动作游戏里循环太明显（玩家 30 秒就听腻）。
+  // prompt 里明确 loopable / no vocals / steady tempo，减少生成出奇怪段落。
+  ['bgm_battle', 90, 'dark fantasy beat em up battle music, driving war drums, low strings ostinato, rusted industrial percussion, tense and heroic, steady driving tempo throughout, seamless loop, instrumental, no vocals', 132, 'D minor'],
+  ['bgm_boss', 90, 'boss battle music, ominous choir, heavy taiko drums, distorted brass, relentless, steady driving tempo throughout, seamless loop, instrumental, no vocals', 140, 'C minor'],
 ];
 
 function graph(seconds, tags, bpm, keyscale, seed, id) {

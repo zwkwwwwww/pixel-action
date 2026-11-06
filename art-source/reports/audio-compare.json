@@ -1,22 +1,4 @@
 {
-  "sfx_swing": {
-    "ace": {
-      "seconds": 1.0,
-      "attackMs": 375.02,
-      "centroidHz": 712.8,
-      "highRatio": 0.003,
-      "rms": 0.1286,
-      "peak": 0.756
-    },
-    "synth": {
-      "seconds": 0.17,
-      "attackMs": 4.4,
-      "centroidHz": 1171.2,
-      "highRatio": 0.045,
-      "rms": 0.0986,
-      "peak": 0.889
-    }
-  },
   "sfx_hit": {
     "ace": {
       "seconds": 1.0,
@@ -27,12 +9,32 @@
       "peak": 1.0
     },
     "synth": {
-      "seconds": 0.24,
-      "attackMs": 1.0,
-      "centroidHz": 1085.3,
+      "seconds": 0.17,
+      "attackMs": 1.41,
+      "centroidHz": 169.4,
+      "highRatio": 0.002,
+      "rms": 0.2377,
+      "peak": 0.892
+    }
+  },
+  "sfx_hit_heavy": {
+    "synth": {
+      "seconds": 0.22,
+      "attackMs": 1.22,
+      "centroidHz": 166.3,
+      "highRatio": 0.002,
+      "rms": 0.2449,
+      "peak": 0.892
+    }
+  },
+  "sfx_hurt": {
+    "synth": {
+      "seconds": 0.28,
+      "attackMs": 49.98,
+      "centroidHz": 305.9,
       "highRatio": 0.0,
-      "rms": 0.0954,
-      "peak": 0.767
+      "rms": 0.3602,
+      "peak": 0.815
     }
   },
   "sfx_dodge": {

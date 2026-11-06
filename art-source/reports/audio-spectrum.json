@@ -1,0 +1,82 @@
+{
+  "sfx_hit": {
+    "seconds": 0.17,
+    "peak": 0.89,
+    "centroidHz": 1825.6,
+    "highPct": 21.73,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_hit_heavy": {
+    "seconds": 0.22,
+    "peak": 0.89,
+    "centroidHz": 1187.9,
+    "highPct": 15.72,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_knife": {
+    "seconds": 0.18,
+    "peak": 0.858,
+    "centroidHz": 4919.5,
+    "highPct": 52.72,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_bow": {
+    "seconds": 0.22,
+    "peak": 0.89,
+    "centroidHz": 3300.5,
+    "highPct": 41.71,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_dodge": {
+    "seconds": 0.16,
+    "peak": 0.89,
+    "centroidHz": 4372.4,
+    "highPct": 59.38,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_jump": {
+    "seconds": 0.14,
+    "peak": 0.89,
+    "centroidHz": 3710.5,
+    "highPct": 48.33,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_hurt": {
+    "seconds": 0.28,
+    "peak": 0.8,
+    "centroidHz": 975.5,
+    "highPct": 7.62,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_death": {
+    "seconds": 0.5,
+    "peak": 0.89,
+    "centroidHz": 2840.3,
+    "highPct": 38.31,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_special": {
+    "seconds": 0.9,
+    "peak": 0.89,
+    "centroidHz": 4635.8,
+    "highPct": 53.45,
+    "ok": true,
+    "problems": []
+  },
+  "sfx_pickup": {
+    "seconds": 0.2,
+    "peak": 0.89,
+    "centroidHz": 1812.9,
+    "highPct": 30.75,
+    "ok": true,
+    "problems": []
+  }
+}

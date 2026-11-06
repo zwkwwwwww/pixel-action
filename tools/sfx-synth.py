@@ -229,46 +229,62 @@ def sfx_swing(seed=11):
     return soft_clip(air + cut + whump + body, 1.3)
 
 
-def sfx_hit(seed=12):
-    """刀砍铁甲：低频冲击 + 宽带裂响 + 极短金属尖（软削波提密度）。
+def metallic_ting(n: int, f0: float, amp: float = 0.5, decay: float = 0.05,
+                  ratios=(1.0, 2.76, 5.40, 8.93)) -> np.ndarray:
+    """金属敲击的**非谐泛音**列。
 
-    旧版"没有击打感"的三个原因，逐条修掉：
-      1. write() 的 2ms 淡入把瞬态峰值削平（实测 peak 只有 0.77）→ 现在 0.2ms
-      2. 低频是 150→62Hz 线性扫频、75ms 衰减 → 改成 210→46Hz 指数扫频、45ms，并加二次谐波
-      3. 金属余响 160ms 糊住瞬态 → 缩到 30ms；末端 tanh 软削波，波峰因数 8.0 → ~4.5
+    为什么不用纯正弦：纯正弦听起来是"电子哔声"（合成器味）。
+    真实金属板/剑身的振动模态是非谐比的（约 1 : 2.76 : 5.40 : 8.93），
+    叠出这些分量才有"金属被敲到"的感觉。
+    """
+    out = np.zeros(n)
+    t = np.arange(n) / SR
+    for k, r in enumerate(ratios):
+        f = f0 * r
+        if f > SR * 0.45:
+            break
+        a = amp / (k + 1) ** 1.25
+        out += a * np.sin(2 * np.pi * f * t) * env_ad(n, 0.0005, decay / (1 + k * 0.55), 2.6)
+    return out
+
+
+def sfx_hit(seed=12):
+    """刀砍铁甲：低频冲击 + 中频实体 + 金属泛音。
+
+    重做原因（人类反馈"难听"）：旧版把能量堆在 6k~12kHz，
+    实测频谱质心 8034Hz、高频占比 75% —— 听起来是"嘶啦"的白噪音，
+    而不是"锵"的金属撞击。游戏音效靠**中频实体**（300~1200Hz）
+    传达"砍到了东西"，高频只负责"脆"，比例必须压住。
     """
     dur = 0.17
     n = int(SR * dur)
-    sub = 0.72 * sweep_sine_exp(dur, 200, 52, decay=0.048, attack=0.0004, power=1.4)
-    sub_h2 = 0.40 * sweep_sine_exp(dur, 400, 104, decay=0.030, attack=0.0004, power=1.9)
-    # 中频"实心感"：380Hz 的短促 thock，是打击感里最常被忽略的一层
-    thock = 0.30 * sweep_sine_exp(dur, 380, 300, decay=0.028, attack=0.0004, power=2.0)
-    crack = biquad(noise(n, seed) * env_ad(n, 0.0004, 0.009, 2.8), "hp", 650, q=0.7)
-    tick = np.zeros(n)
-    for f0, amp in ((2600, 0.70), (3900, 0.55), (5600, 0.38), (7600, 0.20)):
-        tick += amp * sweep_sine_exp(dur, f0, f0 * 0.96, decay=0.022, attack=0.0003, power=2.2)
-    # 空气感：极短的高频"唰"，让命中在混音里"亮"出来
-    air = biquad(noise(n, seed + 3) * env_ad(n, 0.0003, 0.006, 3.0), "hp", 4800, q=0.7)
-    crunch = biquad(noise(n, seed + 7) * env_ad(n, 0.0008, 0.028, 2.0), "bp", 900, q=0.8)
-    mix = 1.0 * sub + sub_h2 + thock + 1.55 * crack + 0.45 * crunch + tick + 0.55 * air
-    # 驱动 1.7：仍然压得住波峰，但不像 1.9 那样把高频磨平
-    return soft_clip(mix, 1.7)
+    # 低频冲击（重量感）
+    sub = 1.00 * sweep_sine_exp(dur, 200, 52, decay=0.048, attack=0.0004, power=1.4)
+    sub_h2 = 0.52 * sweep_sine_exp(dur, 400, 104, decay=0.030, attack=0.0004, power=1.9)
+    # 中频"实体"：砍到东西的实心感，最关键的一层（旧版只有 0.30，太小）
+    thock = 0.62 * sweep_sine_exp(dur, 430, 320, decay=0.034, attack=0.0004, power=2.0)
+    body = 0.42 * biquad(noise(n, seed + 11) * env_ad(n, 0.0006, 0.018, 2.2), "bp", 1150, q=0.9)
+    # 金属脆度：用非谐泛音，而不是往高频堆白噪音
+    # 宽带噪声只留一点点提亮，主力交给窄带的金属泛音与中频 y体。
+    crack = biquad(noise(n, seed) * env_ad(n, 0.0004, 0.010, 2.8), "bp", 1400, q=0.9)
+    ting = metallic_ting(n, 1700, 0.46, 0.034, ratios=(1.0, 2.3, 3.7))
+    air = biquad(noise(n, seed + 3) * env_ad(n, 0.0003, 0.005, 3.0), "hp", 3600, q=0.7)
+    mix = 1.15 * sub + sub_h2 + 1.05 * thock + 1.10 * body + 0.42 * crack + ting + 0.055 * air
+    return soft_clip(mix, 1.55)
 
 
 def sfx_hit_heavy(seed=22):
-    """重击/击杀：比普通命中更低更厚、尾巴略长，用来给连打制造节奏重音。"""
+    """重击/击杀：比普通命中更低更厚、尾巴略长，给连打制造节奏重音。"""
     dur = 0.22
     n = int(SR * dur)
-    sub = 0.82 * sweep_sine_exp(dur, 240, 38, decay=0.055, attack=0.0004, power=1.4)
-    sub_h2 = 0.34 * sweep_sine_exp(dur, 480, 76, decay=0.034, attack=0.0004, power=1.8)
-    crack = biquad(noise(n, seed) * env_ad(n, 0.0004, 0.012, 2.6), "hp", 560, q=0.7)
-    tick = np.zeros(n)
-    for f0, amp in ((2100, 0.46), (3180, 0.36), (4620, 0.24), (6800, 0.14)):
-        tick += amp * sweep_sine_exp(dur, f0, f0 * 0.94, decay=0.026, attack=0.0003, power=2.0)
-    air = biquad(noise(n, seed + 4) * env_ad(n, 0.0003, 0.008, 3.0), "hp", 4400, q=0.7)
-    crunch = biquad(noise(n, seed + 5) * env_ad(n, 0.001, 0.045, 1.8), "bp", 700, q=0.9)
-    mix = 1.0 * sub + sub_h2 + 1.30 * crack + 0.60 * crunch + tick + 0.45 * air
-    return soft_clip(mix, 1.9)
+    sub = 1.10 * sweep_sine_exp(dur, 240, 38, decay=0.058, attack=0.0004, power=1.4)
+    sub_h2 = 0.48 * sweep_sine_exp(dur, 480, 76, decay=0.036, attack=0.0004, power=1.8)
+    thock = 0.55 * sweep_sine_exp(dur, 360, 250, decay=0.042, attack=0.0004, power=1.9)
+    body = 0.40 * biquad(noise(n, seed + 11) * env_ad(n, 0.0007, 0.024, 2.1), "bp", 950, q=0.9)
+    crack = biquad(noise(n, seed) * env_ad(n, 0.0004, 0.013, 2.6), "bp", 1100, q=0.9)
+    ting = metallic_ting(n, 1150, 0.30, 0.044, ratios=(1.0, 2.2, 3.5))
+    mix = 1.20 * sub + 1.05 * sub_h2 + 1.00 * thock + 1.05 * body + 0.40 * crack + ting
+    return soft_clip(mix, 1.65)
 
 
 def sfx_bow(seed=13):
@@ -314,12 +330,15 @@ def sfx_special(seed=16):
     charge[:head] = sweep_sine(head / SR, 220, 90, 0.22) * 0.8
     # 爆发：上升噪声 + 高频 crack
     burst_env = env_ad(n - head, 0.001, 0.18, 2.4)
-    burst = biquad(noise(n - head, seed) * burst_env, "bp", 1800, q=0.6)
-    crack = biquad(noise(n - head, seed + 3) * env_ad(n - head, 0.0005, 0.02, 3.0), "hp", 3500, q=0.7)
+    # 爆发主体放在 1100Hz 中频（"能量炸开"的实体感）,
+    # 高频 crack 从 3500Hz/0.7 降到 2600Hz/0.32
+    # （旧版质心 6419Hz / 高频 66%, 太尖）。
+    burst = biquad(noise(n - head, seed) * burst_env, "bp", 1100, q=0.6)
+    crack = biquad(noise(n - head, seed + 3) * env_ad(n - head, 0.0005, 0.02, 3.0), "hp", 2600, q=0.7)
     # 尾音：低频轰鸣
-    boom = sweep_sine(dur - 0.12, 120, 55, 0.3) * 0.7
+    boom = sweep_sine(dur - 0.12, 120, 55, 0.3) * 0.85
     out = charge.copy()
-    out[head:] += 0.9 * burst + 0.7 * crack
+    out[head:] += 1.15 * burst + 0.32 * crack
     out[int(0.12 * SR):] += boom[: n - int(0.12 * SR)]
     return out
 
@@ -335,28 +354,43 @@ def sfx_jump(seed=17):
 
 
 def sfx_knife(seed=18):
-    """飞刀命中：高频金属叮 + 极短裂响，和箭的木质闷响区分。"""
+    """飞刀命中：金属泛音 + 短裂响。
+
+    旧版 ting 是三根纯正弦（3100/4700/6900Hz），实测高频占比 88.7% ——
+    听起来像静电噪音。改成非谐泛音后亮度还在，但有了"金属"的实体感。
+    """
     dur = 0.18
     n = int(SR * dur)
-    ting = np.zeros(n)
-    for f, a, d in ((3100, 0.55, 0.05), (4700, 0.30, 0.03), (6900, 0.16, 0.02)):
-        ting += a * np.sin(2 * np.pi * f * np.arange(n) / SR) * env_ad(n, 0.001, d, 3.0)
-    crack = biquad(noise(n, seed) * env_ad(n, 0.001, 0.02, 3.5), "bp", 2400, q=0.9) * 0.45
-    return soft_clip(0.6 * ting + crack, 1.4)
+    # f0=1400 + 泛音 (1, 2.2, 3.6): 最高 5040Hz。
+    # 之前 1800x(1, 2.76, 5.4, 8.93) 最高冲到 16kHz,
+    # 实测质心 9831Hz / 高频占 85%, 刺耳。
+    # 飞刀要"叮"得清亮，但不能只剩噪音：
+    # 主体是窄带金属泛音（1400 及其 2.2/3.6 倍），噪声压到点缀级别。
+    ting = metallic_ting(n, 1400, 1.00, 0.065, ratios=(1.0, 2.2, 3.6))
+    crack = biquad(noise(n, seed) * env_ad(n, 0.0008, 0.014, 3.0), "bp", 1600, q=0.9) * 0.22
+    whoosh = biquad(noise(n, seed + 5) * env_ad(n, 0.001, 0.030, 1.8), "hp", 1800, q=0.6) * 0.07
+    # 一点低频"出手"感，把质心往下拉同时更有分量
+    thud = 0.30 * sweep_sine_exp(dur, 260, 120, decay=0.030, attack=0.0006, power=1.6)
+    return soft_clip(0.85 * ting + crack + whoosh + thud, 1.4)
 
 
 def sfx_pickup(seed=19):
-    """拾取补给：两个上行音，短促、干净，一听就知道是"赚到"。"""
+    """拾取补给：两级上行的**铃音**（有谐波），一听就知道是"赚到"。
+
+    旧版是纯正弦 880/1320Hz，没有泛音 → 电子"哔"声，实测高频占比仅 1.3%，
+    既不脆也不悦耳。改成带 1/2/3/4 次谐波的衰减音，像小铃铛。
+    """
     dur = 0.2
     n = int(SR * dur)
     out = np.zeros(n)
-    for i, (f, t0) in enumerate(((880, 0.0), (1320, 0.055))):
+    # G5 -> D6 纯五度上行，比原先的大六度更"胜利"、更稳
+    for f, t0 in ((784.0, 0.0), (1175.0, 0.058)):
         start = int(SR * t0)
-        seg = np.sin(2 * np.pi * f * np.arange(n - start) / SR)
-        seg *= env_ad(n - start, 0.002, 0.05, 2.2)
-        out[start:] += 0.5 * seg
-    return out
-
+        seg_n = n - start
+        if seg_n <= 0:
+            continue
+        out[start:] += metallic_ting(seg_n, f, 0.42, 0.060, ratios=(1.0, 2.0, 3.0, 4.0))
+    return soft_clip(out, 1.2)
 
 GENERATORS = {
     # sfx_swing 暂时关闭：普攻打空现在要求静音（见 docs/ART_PIPELINE.md）。
