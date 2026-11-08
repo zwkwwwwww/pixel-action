@@ -1,100 +1,117 @@
 # 锈月回响 / Echoes of the Rusted Moon
 
-一个用 **Blender + ComfyUI** 产出的 **横版 2.5D 像素动作游戏**垂直切片（**两关**）。
+一个用 **Blender + ComfyUI** 产出的 **横版 2.5D 像素动作游戏**垂直切片（**三关**）。
+
+> THE MOON RUSTED THREE NIGHTS AGO. WHAT FELL FROM IT STILL BURNS.
 
 - 内部渲染 **480 × 270**，整数倍最近邻放大（像素边缘绝对不糊）
-- 原生 **HTML5 Canvas + ES Module**，零框架零依赖
-- 主角 / 敌人 / Boss 美术：Blender 低模 + 骨骼动画 → 正交渲染 → **ComfyUI（Z-Image-Turbo + Fun-ControlNet）像素化重塑** → 精灵表
-- 场景 / 标题背景：ComfyUI 出图 → 48 色量化
-- 音效：**DSP 合成**（噪声整形 + 扫频 + 瞬态包络，80~900ms），BGM 仍由 ComfyUI **ACE-Step 1.5** 生成，无任何外部版权素材
-- 角色动画 **12 帧走路 / 8 帧待机**（原始 6/4 帧，构建时做关键帧重采样），60fps 下动作不再一顿一顿
-- 敌方弓手有独立**投射物系统**：会走位对齐车道、拉弓放箭，箭可被闪避无敌帧躲掉
-- 镜头是**带朝向前瞻的阻尼跟随**，不再硬跟玩家
+- 原生 **HTML5 Canvas + ES Module**，零框架、零运行时依赖
+- 战斗精灵表：Blender 低模 + 骨骼动画 → 正交渲染 → **ComfyUI（Z-Image-Turbo + Fun-ControlNet）像素化重塑** → 三道闸门 → 打包
+- 过场演出：**ComfyUI 文生图**产出非像素插画（6 张），视觉小说式逐字机
+- 场景背景：ComfyUI 出图 → 48 色量化
+- 音频：音效 **DSP 合成**（非谐泛音 + 扫频 + 瞬态包络），BGM 由 **ACE-Step 1.5** 生成后做响度归一并限幅 —— 无任何外部版权素材
 
-## 怎么玩
+## 玩
 
 ```bash
-python -m http.server 9500 --bind 127.0.0.1     # 在本目录启动
-# 浏览器打开 http://127.0.0.1:9500/ ，标题画面按 Enter
+node tools/dev-server.mjs 9500
+# 浏览器打开 http://127.0.0.1:9500/
 ```
+
+> 必须用 `tools/dev-server.mjs`（发 `no-store`）。普通的 `python -m http.server` 会让浏览器缓存 ES module，改代码看不到效果。
+
+### 操作
 
 | 操作 | 键位 |
 | --- | --- |
-| 走位（X 前进 / Y 纵深） | `W A S D` / 方向键 |
-| 普攻三连 | `J`（连按） |
-| 闪避（带无敌帧） | `K` |
-| 必杀（能量满） | `L` |
-| 暂停 | `Esc`（暂停中可 `R` 重开 / `M` 静音） |
+| 走位（X 前进 / Y 纵深四车道） | `W A S D` / 方向键 |
+| 普攻三连（按住蓄力变为重斩） | `J` |
+| 翻滚（带无敌帧，可穿过敌人） | `K` |
+| 必杀（消耗能量） | `L` |
+| 投掷飞刀 | `U` |
+| 跳跃 / 二段跳 | `Space` |
+| 暂停（可 `R` 重开 / `M` 静音） | `Esc` |
 | 静音 | `M` |
-| 重开 | `R` |
 
-目标：两关 —— 第 1 关「RUSTED STREET」清 3 波 + Boss，第 2 关「MOONLIT FOUNDRY」再清 3 波 + 更强的 Boss → ALL STAGES CLEAR。HP 归零即失败。
+### 内容
 
-结算会给出 **TIME / RANK（C-B-A-S）**，并记录到浏览器本地：
-最快通关时间、通关次数、历史最好评价（标题页显示 BEST / CLEARS）。
+- **三关**：RUSTED STREET → MOONLIT FOUNDRY → CLOCK TOWER，每关 3 波杂兵 + 1 个 Boss
+- **五种敌人**：剑兵、重装兵、弓手（远程投射物）、盾兵（正面格挡 -80%，重斩可破防）、飞行敌人（地面攻击打不到，需跳跃或飞刀）
+- **三个 Boss**：锈月骑士（多阶段）、召唤者（远程法球 + 召唤援军）、狂战士（狂暴冲锋）
+- **三档难度**：EASY / NORMAL / HARD，只缩放敌人伤害，不影响玩家输出
+- 连击评级（D/C/B/A/S）+ 剩余时间条、打击停顿分级、背刺加成、清波奖励、地面补给箱
 
 ## 验证
 
 ```bash
-node --test "tests/**/*.test.mjs"        # 96 条纯逻辑单测（含无作弊自动通关）
+node --test "tests/**/*.test.mjs"       # 207 条纯逻辑测试，全部通过
 ```
 
-浏览器取证（CDP，真实键鼠事件 + 截图）见 `tools/browser-probe.mjs` 与 `tools/probes/`。
+测试覆盖战斗判定、Boss 阶段、敌人机制、机动性、难度、拾取、音频清单与**频谱**（自带 FFT），
+以及一条不靠作弊的自动通关。
 
-实测数据（本机 RTX 5060 Laptop 8GB）：
+## 美术管线
 
-| 项 | 结果 |
+```
+tools/blender/            低模建模 + 骨骼动画 + 正交渲染（384×384）
+      ↓
+tools/comfy/restyle.mjs   ComfyUI img2img 像素化重塑（Z-Image-Turbo GGUF + ControlNet）
+      ↓
+tools/compose_final.py    固定裁切框 + 预乘 + 48 色调色板
+      ↓
+tools/frame_diff.py       帧间差闸门（动画不能跳）
+tools/pivot_drift.py      轴心漂移闸门（角色不能抖）
+tools/walk_gate.py        走路闸门
+      ↓
+tools/pack_sprites.py     打包成 {image, cell, anchor, clips, version} 契约
+```
+
+三道闸门不过就不许打包 —— 这是"AI 生成的图直接进游戏"最常见的翻车点。
+
+另有独立管线：
+
+| 工具 | 用途 |
 | --- | --- |
-| 单测 | 96 pass / 0 fail |
-| 素材加载 | `loaded:5 / failed:0`，console error 0 |
-| 清第 1 波（真实按键） | `segmentIndex:1`，2 杀，hp 112 |
-| Boss | 出场 hp 420、体型 20；18 次攻击造成 136 伤害；击杀后 `won:true` |
-| 音频 | `ctxState:running`、8/8 解码、BGM + 4 类音效实际播出 |
-| 性能 | 常规 60fps（逻辑 0.05ms / 绘制 0.40ms）；240 粒子 + 300 飘字仍 60.4fps |
-| 帧间一致性 | 所有剪辑最大像素差 0.055（阈值 0.22） |
-| 动画帧数 | hero 41 → **66 帧**；敌人/Boss 各 41 → 54 帧（idle 8 / walk 12 / attack1 6…） |
-| 音效 | 起音时间 swing 375ms→**4.4ms**、hit 666ms→**1.0ms**；时长 1.0s→0.17s/0.24s |
-| 弓手 | 真实跑动中射出箭并命中：`shotEvents:2`、玩家 hp 111→95、播放 `sfx_bow` |
-| 镜头 | 阻尼跟随，150ms 内最大位移 0.08px（无跳变） |
-
-证据截图在 `art-source/evidence/`：`title.png`、`shot-combat.png`、`e2e-boss.png`、`e2e-win.png`、`contact-sheet.png`。
-
-## 美术管线（一条命令）
-
-```bash
-bash tools/build-sprites.sh hero            # Blender 帧 → ComfyUI 重塑 → 硬像素 → 精灵表
-bash tools/build-enemy-sprites.sh           # grunt / brute / ranger / boss
-node tools/comfy/backgrounds.mjs            # 场景背景
-node tools/comfy/audio-batch.mjs            # 音效 + BGM
-```
-
-细节与参数理由见 [`docs/ART_PIPELINE.md`](docs/ART_PIPELINE.md)，尺寸契约见 [`docs/art-contract.md`](docs/art-contract.md)。
+| `tools/comfy/story-art.mjs` | 过场插画（文生图，明确排除 pixel art）+ 椭圆软蒙版立绘 |
+| `tools/comfy/audio-batch.mjs` | ACE-Step 生成 BGM |
+| `tools/sfx-synth.py` | DSP 合成音效 |
+| `tools/audio-polish.py` | BGM 响度归一化 + 软限幅（生成式音频必须做，否则削波刺耳） |
+| `tools/audio-spectrum.py` | 音效频谱体检 |
+| `tools/browser-probe.mjs` | CDP 真实键鼠事件 + 截图取证 |
 
 ## 目录
 
 ```
-index.html              入口
-src/main.js             场景/输入/循环/绘制/音频事件
-src/core/               纯逻辑（可在 node 单测，不碰 DOM）
-  world.js              战斗世界（命中结算 / 命中停顿 / 事件流）
-  actor.js              角色状态机与物理（挑空 / 倒地 / 无敌帧）
-  attacks.js            攻击数据表与命中盒几何
-  ai.js                 三种敌人 + Boss AI
-  level.js              波次 / 闸门 / 胜负
-  animation.js          状态 → 剪辑 → 帧号
-  effects.js            飘字 / 粒子
-  input.js              方向 + 输入缓冲
-src/render/             渲染层（视口缩放 / 精灵 / 点阵字 / 音频）
-tools/blender/          Blender 建模与渲染脚本（含 README）
-tools/comfy/            ComfyUI 客户端、重塑、背景、音频
-tools/*.py              像素化 / 合成 / 打包 / 一致性闸门 / 总览图
-assets/                 游戏直接加载的成品（精灵表 / 背景 / 音频）
-art-source/             Blender 工程源文件（.blend 入库，渲染帧不入库）
+index.html               入口
+src/main.js              接线层：主循环 / 输入 / HUD
+src/core/                纯逻辑层（可在 node 单测，不碰 DOM/Canvas）
+src/render/              渲染层（精灵、像素字体、音频）
+assets/                  精灵表、背景、过场插画、音频
+tools/                   Blender / ComfyUI / 音频 / 校验工具
+tests/                   node --test
+art-source/              管线中间产物与验收截图
+docs/                    管线文档与资产契约
 ```
+
+## 实测数据
+
+| 项 | 结果 |
+| --- | --- |
+| 单测 | **207 pass / 0 fail** |
+| 素材加载 | 10 张精灵表 + 6 张过场插画 + 4 张背景，`missing: []` |
+| 性能 | 常规 60fps（逻辑 0.05ms / 绘制 0.40ms）；240 粒子 + 300 飘字仍 60.4fps |
+| 帧间一致性 | 所有剪辑最大像素差 0.055（阈值 0.22） |
+| 音频 | 13/13 解码，BGM peak 0.818/0.834 零削波，音效频谱质心 1188–4920Hz |
+
+证据截图在 `art-source/evidence/`。
 
 ## 已知限制
 
-- 两关垂直切片：每关 3 波小怪 + 1 Boss，共 2 个 Boss 战；没有养成/商店/分支路线。
-- 敌人为控制生成时间只重塑了 idle / walk / attack1 / hurt / death 五个剪辑，attack2/3 播放时回退 attack1。
-- 触屏适配未做（桌面浏览器优先）。
-- 背景与角色的透视比例是风格化处理的（背景偏大），已用暗化与程序化地面统一观感。
+- 触屏 / 手柄未适配（原定非验收项）
+- 无中途存档（只有通关记录存 localStorage）
+- 无法自定义键位
+
+## 素材声明
+
+所有美术与音频均由本项目自己的管线生成（Blender 建模、ComfyUI 推理、DSP 合成），
+不包含任何第三方版权素材。
