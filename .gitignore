@@ -49,3 +49,6 @@ tmp/
 *.pyc
 __pycache__/
 *.blend1
+# 音频后处理的中间产物（保留源文件与最终 mp3 即可）
+*.polished.mp3
+assets/audio/*.tmp.wav
